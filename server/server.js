@@ -216,6 +216,8 @@ const validApiKeys = (process.env.API_KEYS || process.env.API_KEY || '')
   .map(key => key.trim())
   .filter(Boolean);
 
+const apiPagePassword = (process.env.API_PAGE_PASSWORD || '').trim();
+
 const requireApiKey = (req, res, next) => {
   if (validApiKeys.length === 0) {
     return next();
@@ -228,6 +230,23 @@ const requireApiKey = (req, res, next) => {
 
   return res.status(401).json({ error: 'Invalid API key' });
 };
+
+app.post('/api/auth/api-keys', (req, res) => {
+  if (!apiPagePassword) {
+    return res.status(400).json({ error: 'API page password is not configured' });
+  }
+
+  const password = (req.body && req.body.password ? String(req.body.password) : '').trim();
+
+  if (!password || password !== apiPagePassword) {
+    return res.status(401).json({ error: '访问密码不正确' });
+  }
+
+  return res.json({
+    success: true,
+    keys: validApiKeys.length > 0 ? validApiKeys : []
+  });
+});
 
 // 配置文件存储
 const storage = multer.diskStorage({
