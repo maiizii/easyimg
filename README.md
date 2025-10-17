@@ -1,16 +1,24 @@
 一个简单好用的图床
-部署方法
-1,将除server文件夹的项目文件以静态网页的开工部署到/var/www/html文件夹下或者宝塔对应网站文件夹（也可以在后端通过 `FRONTEND_DIST_DIR` 直接托管这些静态文件）
-2，根据server里的说明，在VPS上部署后端，并在 `.env` 中配置 `API_KEY`、`ALLOWED_ORIGINS` 等安全项（服务启动时会自动读取）
-好了，可以使用了，打开你的前台网页，设置里填入你server的API地址就行；若前后端统一域名，则可直接访问同一地址。
-若启用了后端的 API 密钥校验，请在前台的「API 接口」页生成密钥，并将同一值配置到服务器的 `.env` 中，随后重启服务使其生效。
+====================
 
-> **小提示**：新版后端会默认允许与当前访问域名相同的 `Origin`，即便没有在 `ALLOWED_ORIGINS` 中显式写出，也能正常上传。
-> 如果需要强制只允许列表中的来源，可以在 `.env` 中将 `ALLOW_SAME_HOST_ORIGIN` 设置为 `false`。
+## 部署方法
+
+1. 将除 `server` 文件夹外的所有静态资源部署到站点目录（例如 `/var/www/html` 或宝塔面板对应的网站目录）。如果使用后端内置的静态托管功能，可在 `.env` 中通过 `FRONTEND_DIST_DIR=..` 指向当前项目根目录。
+2. 根据 `server/README.md` 的指引在 VPS 上部署 Node.js 后端。后端提供了一个完整的 [`server/.env.example`](server/.env.example) 文件，请复制为 `.env` 后按照注释填写 `API_KEY`、`ALLOWED_ORIGINS` 等安全项，重启服务即可生效。
+3. 打开前端页面，在「连接配置」中填写后端 API 地址与密钥，即可开始上传。如果前后端使用同一域名，仅需填写 `https://你的域名` 即可。
+
+> **提示**：后端默认放行与当前访问 Host 相同的来源，即便未在 `ALLOWED_ORIGINS` 中列出，也可正常上传。如需强制仅允许白名单域名，请将 `.env` 中的 `ALLOW_SAME_HOST_ORIGIN` 设置为 `false`。
+
+前端页面提供：
+
+- API 地址 & 密钥配置，自动保存到浏览器 `localStorage`
+- 多图片上传，成功后支持复制直链、Markdown、BBCode
+- 图片列表展示，支持从服务器刷新、复制和删除
+- 本地历史清空按钮，便于快速整理
 
 ## Nginx 反向代理示例
 
-如果将前端和后端分别部署在 `imgup.example.com`（静态文件）和 `img.example.com`（API） 两个域名下，可以参考下面的 Nginx 配置：
+如果将前端和后端分别部署在 `imgup.example.com`（静态文件）和 `img.example.com`（API）两个域名下，可以参考下面的 Nginx 配置：
 
 ```nginx
 server {
@@ -131,4 +139,4 @@ server {
 
 请确保在反向代理启用前，后端服务已经在服务器本地的 `3000` 端口启动（例如使用 `pm2 start server.js`）。如果访问代理域名返回 `502 Bad Gateway`，通常意味着 Node.js 进程未运行或启动失败，可以通过 `pm2 status` 或 `journalctl -u <service>` 等命令检查进程日志。
 
-在https://github.com/ceocok/fake-nodeimage 基础上修改
+在 https://github.com/ceocok/fake-nodeimage 基础上修改

@@ -1,27 +1,72 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>简易图床 - 简洁 高效 </title>
-    <meta name="description" content="简洁高效的图片托管服务，支持多种格式，快速上传，永久保存" />
-    <meta name="keywords" content="简易图床,图床,图片托管,图片上传,免费图床" />
-    <meta name="author" content="简易图床" />
-
-    <meta property="og:title" content="简易图床 - 简洁 高效" />
-    <meta property="og:description" content="简洁高效的图片托管服务，支持多种格式，快速上传，永久保存" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://img.811777.xyz/i/2025/10/18/68f2701f5aaa9.png" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="简易图床 - 简洁 高效" />
-    <meta name="twitter:description" content="简洁高效的图片托管服务，支持多种格式，快速上传，永久保存" />
-    <meta name="twitter:image" content="https://img.811777.xyz/i/2025/10/18/68f2701f5aaa9.png" />
-    <script type="module" crossorigin src="/assets/index-BT8tJ8lp.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BstpSNPi.css">
+    <title>简易图床 - 快速上传与管理图片</title>
+    <meta name="description" content="简洁高效的图床服务，支持自定义后端 API 与密钥保护" />
+    <link rel="stylesheet" href="/assets/app.css" />
   </head>
-
   <body>
-    <div id="root"></div>
+    <header>
+      <h1>简易图床</h1>
+      <p>配置 API 地址和密钥即可快速上传、管理与分享图片</p>
+    </header>
+    <main>
+      <section class="card" id="settings-section">
+        <h2>连接配置</h2>
+        <p class="section-description">
+          请填写后端服务地址与 API 密钥。保存后即可开始上传图片，如需禁用密钥校验可在后端设置中调整。
+        </p>
+        <form id="settings-form" class="settings-grid">
+          <label>
+            API 地址（例如：https://img.example.com 或 http://服务器IP:3000）
+            <input id="apiUrl" type="url" placeholder="https://" required />
+          </label>
+          <label>
+            API 密钥（X-API-Key）
+            <input id="apiKey" type="text" placeholder="填写在后端 .env 中配置的密钥" autocomplete="off" required />
+          </label>
+          <button type="submit">保存配置</button>
+        </form>
+        <div id="status" class="status"></div>
+      </section>
+
+      <section class="card hidden" id="upload-section">
+        <h2>上传图片</h2>
+        <p class="section-description">
+          支持一次上传多张图片，最大 10 MB / 张（可在后端修改）。上传成功后可复制直链、Markdown 或 BBCode。
+        </p>
+        <form id="upload-form">
+          <label>
+            选择图片
+            <input id="imageFiles" type="file" accept="image/*" multiple />
+          </label>
+          <div class="actions">
+            <button id="upload-button" type="submit">开始上传</button>
+            <button type="button" class="secondary" id="refresh-history">刷新图片列表</button>
+            <button type="button" class="secondary" id="clear-history">清空本地记录</button>
+          </div>
+        </form>
+        <div id="upload-results" class="results-list hidden"></div>
+      </section>
+
+      <section class="card" id="empty-config">
+        <h2>提示</h2>
+        <p class="section-description">
+          目前尚未检测到有效的 API 配置。请先在上方填写后端地址和密钥，保存后即可使用上传和管理功能。
+        </p>
+      </section>
+
+      <section class="card hidden" id="history-section">
+        <h2>图片列表</h2>
+        <p class="section-description">
+          这里展示最近上传的图片。点击“刷新图片列表”可从服务器重新获取数据，删除操作将立即同步至服务器。
+        </p>
+        <div id="history-list" class="results-list"></div>
+      </section>
+    </main>
+
+    <script type="module" src="/assets/app.js"></script>
   </body>
 </html>
