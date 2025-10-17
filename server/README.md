@@ -92,6 +92,8 @@ API_KEY=
 # 例：FRONTEND_DIST_DIR=..
 ```
 
+> 可以直接复制项目内的 [`server/.env.example`](./.env.example) 为 `.env`，再根据部署环境修改对应值。
+
 > 提示：后端现在会自动加载与 `server.js` 同目录或进程当前工作目录下的 `.env` 文件，
 > 因此只需在部署目录创建并更新 `.env` 后重新启动服务即可生效。
 
