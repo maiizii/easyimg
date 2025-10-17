@@ -84,6 +84,7 @@ ALLOWED_ORIGINS=
 # API 密钥，可在前端的「API 接口」页面生成，多个密钥用逗号分隔
 API_KEY=
 # （可选）前端打包产物所在目录，配置后后端会托管该目录
+# 如果未配置，后端会尝试自动识别与 `server.js` 同级或上级目录中的前端构建目录
 # 例：FRONTEND_DIST_DIR=..
 ```
 
@@ -117,7 +118,8 @@ curl -H "X-API-Key: your-api-key" http://your-domain.com/api/images
 如果希望通过同一个域名同时提供前端页面与 API（例如统一使用 `https://img.example.com`），
 可以将前端打包后的静态资源路径配置到 `FRONTEND_DIST_DIR` 环境变量。后端会自动托管该目录下的静态资源，
 并为非 `/api`、`/images` 请求返回 `index.html`，无需单独部署前端静态站点。请确保该目录仅包含可公开访问的前端文件，
-不要把 `.env` 或其他后端敏感内容放在该目录内。
+不要把 `.env` 或其他后端敏感内容放在该目录内。如果未显式设置 `FRONTEND_DIST_DIR`，后端会尝试在 `server.js`
+所在目录的上级位置自动寻找包含 `index.html` 的目录并托管。
 
 例如：
 

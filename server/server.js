@@ -46,13 +46,38 @@ if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-const FRONTEND_DIST_DIR = process.env.FRONTEND_DIST_DIR
-  ? path.resolve(__dirname, process.env.FRONTEND_DIST_DIR)
-  : null;
+const resolveFrontendDistDir = () => {
+  const candidates = [];
 
-const hasFrontendBuild = FRONTEND_DIST_DIR
-  ? fs.existsSync(path.join(FRONTEND_DIST_DIR, 'index.html'))
-  : false;
+  if (process.env.FRONTEND_DIST_DIR) {
+    const envPath = process.env.FRONTEND_DIST_DIR.trim();
+
+    if (envPath) {
+      if (path.isAbsolute(envPath)) {
+        candidates.push(envPath);
+      } else {
+        candidates.push(path.resolve(__dirname, envPath));
+        candidates.push(path.resolve(process.cwd(), envPath));
+      }
+    }
+  }
+
+  candidates.push(path.resolve(__dirname, '..'));
+  candidates.push(path.resolve(__dirname, '../dist'));
+  candidates.push(path.resolve(process.cwd(), 'dist'));
+  candidates.push(path.resolve(process.cwd(), '..'));
+
+  for (const dir of candidates) {
+    if (dir && fs.existsSync(path.join(dir, 'index.html'))) {
+      return dir;
+    }
+  }
+
+  return null;
+};
+
+const FRONTEND_DIST_DIR = resolveFrontendDistDir();
+const hasFrontendBuild = Boolean(FRONTEND_DIST_DIR);
 
 // CORS配置 - 允许您的前端域名访问
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
@@ -234,4 +259,9 @@ app.use((error, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`图床服务器运行在端口 ${PORT}`);
   console.log(`上传目录: ${UPLOAD_DIR}`);
+  if (hasFrontendBuild) {
+    console.log(`前端静态资源目录: ${FRONTEND_DIST_DIR}`);
+  } else {
+    console.warn('未检测到前端静态资源构建目录，跳过静态资源托管');
+  }
 });
