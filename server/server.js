@@ -12,11 +12,30 @@
  * pm2 start server.js
  */
 
+const path = require('path');
+const fs = require('fs');
+const dotenv = require('dotenv');
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
+
+const envCandidates = [
+  path.resolve(__dirname, '.env'),
+  path.resolve(process.cwd(), '.env')
+];
+
+let envLoaded = false;
+for (const envPath of envCandidates) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+    envLoaded = true;
+    break;
+  }
+}
+
+if (!envLoaded) {
+  dotenv.config();
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +45,14 @@ const UPLOAD_DIR = path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
+
+const FRONTEND_DIST_DIR = process.env.FRONTEND_DIST_DIR
+  ? path.resolve(__dirname, process.env.FRONTEND_DIST_DIR)
+  : null;
+
+const hasFrontendBuild = FRONTEND_DIST_DIR
+  ? fs.existsSync(path.join(FRONTEND_DIST_DIR, 'index.html'))
+  : false;
 
 // CORS配置 - 允许您的前端域名访问
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
@@ -179,6 +206,24 @@ app.get('/api/images', requireApiKey, (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: '图床服务运行正常' });
 });
+
+if (hasFrontendBuild) {
+  app.use(express.static(FRONTEND_DIST_DIR, {
+    setHeaders: (res, filePath) => {
+      if (path.extname(filePath) === '.html') {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    }
+  }));
+
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/images')) {
+      return next();
+    }
+
+    res.sendFile(path.join(FRONTEND_DIST_DIR, 'index.html'));
+  });
+}
 
 // 错误处理
 app.use((error, req, res, next) => {
