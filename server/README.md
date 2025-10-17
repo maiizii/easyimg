@@ -46,6 +46,8 @@ pm2 logs image-hosting
 pm2 restart image-hosting
 ```
 
+> **提示**：如果从仓库拉取了最新代码或收到 `MODULE_NOT_FOUND` 类似的报错，请重新运行 `npm install` 安装可能新增的依赖，再执行 `pm2 restart image-hosting` 重启服务。
+
 ### 5. 配置Nginx反向代理（可选但推荐）
 ```nginx
 server {
@@ -81,6 +83,8 @@ PORT=3000
 NODE_ENV=production
 # 允许的前端域名，多个用逗号分隔，例如：https://imgup.example.com,https://another.example.com
 ALLOWED_ORIGINS=
+# 是否自动放行与当前 Host 相同的来源（默认 true，填写 false 可强制只使用 ALLOWED_ORIGINS 列表）
+ALLOW_SAME_HOST_ORIGIN=true
 # API 密钥，可在前端的「API 接口」页面生成，多个密钥用逗号分隔
 API_KEY=
 # （可选）前端打包产物所在目录，配置后后端会托管该目录
