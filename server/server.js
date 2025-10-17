@@ -14,7 +14,6 @@
 
 const path = require('path');
 const fs = require('fs');
-const dotenv = require('dotenv');
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
@@ -24,17 +23,82 @@ const envCandidates = [
   path.resolve(process.cwd(), '.env')
 ];
 
+const parseEnvValue = (rawValue) => {
+  if (rawValue === undefined) {
+    return '';
+  }
+
+  let value = rawValue;
+
+  const trimmed = value.trim();
+  const startsWithQuote = trimmed.startsWith('"') || trimmed.startsWith("'");
+  const endsWithQuote = trimmed.endsWith('"') || trimmed.endsWith("'");
+
+  if (!startsWithQuote) {
+    const commentIndex = value.indexOf('#');
+    if (commentIndex !== -1) {
+      value = value.slice(0, commentIndex);
+    }
+  }
+
+  value = value.trim();
+
+  if (!value) {
+    return '';
+  }
+
+  if (startsWithQuote && endsWithQuote && value.length >= 2) {
+    value = value.slice(1, -1);
+  }
+
+  return value
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\r');
+};
+
+const loadEnvFile = (envPath) => {
+  if (!fs.existsSync(envPath)) {
+    return false;
+  }
+
+  try {
+    const content = fs.readFileSync(envPath, 'utf8');
+    const lines = content.split(/\r?\n/);
+
+    for (const line of lines) {
+      if (!line || line.trim().startsWith('#')) {
+        continue;
+      }
+
+      const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_\.-]*)\s*=\s*(.*)\s*$/);
+
+      if (!match) {
+        continue;
+      }
+
+      const [, key, rawValue] = match;
+      if (!Object.prototype.hasOwnProperty.call(process.env, key)) {
+        process.env[key] = parseEnvValue(rawValue);
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.warn(`读取环境变量文件失败: ${envPath}`, error);
+    return false;
+  }
+};
+
 let envLoaded = false;
 for (const envPath of envCandidates) {
-  if (fs.existsSync(envPath)) {
-    dotenv.config({ path: envPath });
+  if (loadEnvFile(envPath)) {
     envLoaded = true;
     break;
   }
 }
 
 if (!envLoaded) {
-  dotenv.config();
+  loadEnvFile(path.resolve('.env'));
 }
 
 const app = express();
@@ -85,25 +149,65 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .map(origin => origin.trim())
   .filter(Boolean);
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) {
-      return callback(null, true);
-    }
+const normalizeBoolean = (value, defaultValue) => {
+  if (value === undefined || value === null) {
+    return defaultValue;
+  }
 
-    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+  const normalized = String(value).trim().toLowerCase();
 
-    return callback(new Error(`Origin ${origin} not allowed by CORS`));
-  },
+  if (!normalized) {
+    return defaultValue;
+  }
+
+  if (['1', 'true', 'yes', 'y', 'on'].includes(normalized)) {
+    return true;
+  }
+
+  if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) {
+    return false;
+  }
+
+  return defaultValue;
+};
+
+const allowSameHostOrigin = normalizeBoolean(process.env.ALLOW_SAME_HOST_ORIGIN, true);
+
+const baseCorsOptions = {
   credentials: true,
   methods: ['GET', 'POST', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-API-Key']
 };
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+const corsOptionsDelegate = (req, callback) => {
+  const requestOrigin = req.header('Origin');
+
+  if (!requestOrigin) {
+    return callback(null, { ...baseCorsOptions, origin: true });
+  }
+
+  if (allowedOrigins.length === 0 || allowedOrigins.includes(requestOrigin)) {
+    return callback(null, { ...baseCorsOptions, origin: requestOrigin });
+  }
+
+  if (allowSameHostOrigin) {
+    try {
+      const originHost = new URL(requestOrigin).host;
+      const requestHost = req.header('Host');
+
+      if (originHost && requestHost && originHost === requestHost) {
+        return callback(null, { ...baseCorsOptions, origin: requestOrigin });
+      }
+    } catch (error) {
+      console.warn(`无法解析 Origin: ${requestOrigin}`, error);
+    }
+  }
+
+  return callback(new Error(`Origin ${requestOrigin} not allowed by CORS`));
+};
+
+app.use(cors(corsOptionsDelegate));
+app.options('*', cors(corsOptionsDelegate));
 
 app.use(express.json());
 
