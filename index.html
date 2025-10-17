@@ -8,64 +8,121 @@
     <link rel="stylesheet" href="/assets/app.css" />
   </head>
   <body>
-    <header>
-      <h1>简易图床</h1>
-      <p>配置 API 地址和密钥即可快速上传、管理与分享图片</p>
-    </header>
-    <main>
-      <section class="card" id="settings-section">
-        <h2>连接配置</h2>
-        <p class="section-description">
-          请填写后端服务地址与 API 密钥。保存后即可开始上传图片，如需禁用密钥校验可在后端设置中调整。
-        </p>
-        <form id="settings-form" class="settings-grid">
-          <label>
-            API 地址（例如：https://img.example.com 或 http://服务器IP:3000）
-            <input id="apiUrl" type="url" placeholder="https://" required />
-          </label>
-          <label>
-            API 密钥（X-API-Key）
-            <input id="apiKey" type="text" placeholder="填写在后端 .env 中配置的密钥" autocomplete="off" required />
-          </label>
-          <button type="submit">保存配置</button>
-        </form>
-        <div id="status" class="status"></div>
-      </section>
-
-      <section class="card hidden" id="upload-section">
-        <h2>上传图片</h2>
-        <p class="section-description">
-          支持一次上传多张图片，最大 10 MB / 张（可在后端修改）。上传成功后可复制直链、Markdown 或 BBCode。
-        </p>
-        <form id="upload-form">
-          <label>
-            选择图片
-            <input id="imageFiles" type="file" accept="image/*" multiple />
-          </label>
-          <div class="actions">
-            <button id="upload-button" type="submit">开始上传</button>
-            <button type="button" class="secondary" id="refresh-history">刷新图片列表</button>
-            <button type="button" class="secondary" id="clear-history">清空本地记录</button>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark">📷</span>
+          <div class="brand-text">
+            <h1>简易图床</h1>
+            <p>快速上传、管理与分享图片</p>
           </div>
-        </form>
-        <div id="upload-results" class="results-list hidden"></div>
-      </section>
+        </div>
+        <nav class="topnav" aria-label="主要功能">
+          <button type="button" class="nav-button active" data-view="upload">上传图片</button>
+          <button type="button" class="nav-button" data-view="history">历史记录</button>
+          <button type="button" class="nav-button" data-view="settings">设置</button>
+          <button type="button" class="nav-button" data-view="api">API</button>
+        </nav>
+      </header>
 
-      <section class="card" id="empty-config">
-        <h2>提示</h2>
-        <p class="section-description">
-          目前尚未检测到有效的 API 配置。请先在上方填写后端地址和密钥，保存后即可使用上传和管理功能。
-        </p>
-      </section>
+      <main class="content" id="main-content">
+        <section id="view-upload" class="view active" aria-labelledby="upload-title">
+          <div class="panel">
+            <div class="panel-header">
+              <h2 id="upload-title">上传图片</h2>
+              <p class="muted">直接拖拽或点击选择文件，支持一次上传多张图片，最大 10 MB / 张</p>
+              <p id="upload-warning" class="warning hidden">⚠️ 请先在设置中保存 API 地址和密钥后再上传图片</p>
+            </div>
+            <div class="upload-area" id="upload-dropzone" tabindex="0" role="button" aria-label="点击或拖拽上传图片">
+              <div class="dropzone-icon">⬆️</div>
+              <p class="dropzone-title">拖拽图片到这里或点击选择</p>
+              <p class="dropzone-hint">支持 PNG、JPG、GIF 等常见格式</p>
+              <button type="button" class="secondary" id="trigger-file">选择图片</button>
+              <input id="imageFiles" type="file" accept="image/*" multiple hidden />
+            </div>
+            <div class="panel-actions">
+              <button id="upload-button" type="button">开始上传</button>
+              <button type="button" class="ghost" id="refresh-history">刷新图片列表</button>
+              <button type="button" class="ghost" id="clear-history">清空本地记录</button>
+            </div>
+          </div>
+          <div id="upload-results" class="results-list hidden" aria-live="polite"></div>
+        </section>
 
-      <section class="card hidden" id="history-section">
-        <h2>图片列表</h2>
-        <p class="section-description">
-          这里展示最近上传的图片。点击“刷新图片列表”可从服务器重新获取数据，删除操作将立即同步至服务器。
-        </p>
-        <div id="history-list" class="results-list"></div>
-      </section>
-    </main>
+        <section id="view-history" class="view" aria-labelledby="history-title">
+          <div class="panel">
+            <div class="panel-header">
+              <h2 id="history-title">历史上传</h2>
+              <p class="muted">查看最近上传的图片，支持复制链接或删除服务器上的文件</p>
+              <p id="history-warning" class="warning hidden">⚠️ 需要先配置 API 地址和密钥才能从服务器获取历史记录</p>
+            </div>
+            <div id="history-list" class="results-list" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <section id="view-settings" class="view" aria-labelledby="settings-title">
+          <div class="panel">
+            <div class="panel-header">
+              <h2 id="settings-title">连接配置</h2>
+              <p class="muted">填写后端服务地址与 API 密钥，保存后即可启用上传功能</p>
+            </div>
+            <form id="settings-form" class="form-grid">
+              <label class="form-item">
+                <span class="form-label">API 地址</span>
+                <input id="apiUrl" type="url" placeholder="https://img.example.com" required />
+                <span class="form-hint">示例：https://img.example.com 或 http://服务器IP:3000</span>
+              </label>
+              <label class="form-item">
+                <span class="form-label">API 密钥（X-API-Key）</span>
+                <input id="apiKey" type="text" placeholder="在后端 .env 中配置的密钥" autocomplete="off" required />
+                <span class="form-hint">安全提示：请妥善保管密钥，不要分享给他人</span>
+              </label>
+              <div class="form-actions">
+                <button type="submit">保存配置</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section id="view-api" class="view" aria-labelledby="api-title">
+          <div class="panel">
+            <div class="panel-header">
+              <h2 id="api-title">API 接口</h2>
+              <p class="muted">快速查看当前配置并复制示例命令，便于在脚本或其他应用中集成</p>
+            </div>
+            <div class="api-cards">
+              <div class="info-card">
+                <h3>当前配置</h3>
+                <div class="info-item">
+                  <span class="info-label">API 地址</span>
+                  <code id="current-api" class="info-value">未配置</code>
+                  <button type="button" class="ghost" data-copy="current-api">复制</button>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">API 密钥</span>
+                  <code id="current-key" class="info-value">未配置</code>
+                  <button type="button" class="ghost" data-copy="current-key">复制</button>
+                </div>
+              </div>
+              <div class="info-card">
+                <h3>示例命令</h3>
+                <p class="muted">使用 curl 调用上传接口：</p>
+                <pre class="code-block" id="example-upload">curl -X POST "https://api.example.com/api/upload" \
+  -H "X-API-Key: YOUR_API_KEY" \
+  -F "images=@/path/to/image.jpg"</pre>
+                <button type="button" class="ghost" data-copy="example-upload">复制命令</button>
+                <p class="muted">获取历史记录：</p>
+                <pre class="code-block" id="example-history">curl "https://api.example.com/api/images" \
+  -H "X-API-Key: YOUR_API_KEY"</pre>
+                <button type="button" class="ghost" data-copy="example-history">复制命令</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <div id="status" class="toast" role="status" aria-live="polite"></div>
+    </div>
 
     <script type="module" src="/assets/app.js"></script>
   </body>
