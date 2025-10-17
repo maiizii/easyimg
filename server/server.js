@@ -47,13 +47,31 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-API-Key']
 };
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 app.use(express.json());
+
+const validApiKeys = (process.env.API_KEYS || process.env.API_KEY || '')
+  .split(',')
+  .map(key => key.trim())
+  .filter(Boolean);
+
+const requireApiKey = (req, res, next) => {
+  if (validApiKeys.length === 0) {
+    return next();
+  }
+
+  const headerKey = req.get('x-api-key');
+  if (headerKey && validApiKeys.includes(headerKey)) {
+    return next();
+  }
+
+  return res.status(401).json({ error: 'Invalid API key' });
+};
 
 // 配置文件存储
 const storage = multer.diskStorage({
@@ -89,7 +107,7 @@ const upload = multer({
 app.use('/images', express.static(UPLOAD_DIR));
 
 // 上传接口
-app.post('/api/upload', upload.array('images', 10), (req, res) => {
+app.post('/api/upload', requireApiKey, upload.array('images', 10), (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: '没有上传文件' });
@@ -114,7 +132,7 @@ app.post('/api/upload', upload.array('images', 10), (req, res) => {
 });
 
 // 删除图片接口
-app.delete('/api/images/:filename', (req, res) => {
+app.delete('/api/images/:filename', requireApiKey, (req, res) => {
   try {
     const filename = req.params.filename;
     const filePath = path.join(UPLOAD_DIR, filename);
@@ -132,7 +150,7 @@ app.delete('/api/images/:filename', (req, res) => {
 });
 
 // 获取图片列表接口
-app.get('/api/images', (req, res) => {
+app.get('/api/images', requireApiKey, (req, res) => {
   try {
     const files = fs.readdirSync(UPLOAD_DIR);
     const imageFiles = files.map(filename => {

@@ -81,12 +81,14 @@ PORT=3000
 NODE_ENV=production
 # 允许的前端域名，多个用逗号分隔，例如：https://imgup.example.com,https://another.example.com
 ALLOWED_ORIGINS=
+# API 密钥，可在前端的「API 接口」页面生成，多个密钥用逗号分隔
+API_KEY=
 ```
 
 ## 安全建议
 
 1. **修改CORS配置**：通过 `ALLOWED_ORIGINS` 或直接在 `server.js` 中显式列出允许的前端域名，避免使用通配符
-2. **添加认证**：对于生产环境，建议添加API密钥验证
+2. **添加认证**：设置 `API_KEY`（或 `API_KEYS`） 环境变量启用内置的 API 密钥校验
 3. **限流**：使用 `express-rate-limit` 防止滥用
 4. **定期备份**：定期备份 `uploads` 目录
 
@@ -96,11 +98,11 @@ ALLOWED_ORIGINS=
 # 健康检查
 curl http://your-domain.com/api/health
 
-# 上传测试
-curl -X POST -F "images=@test.jpg" http://your-domain.com/api/upload
+# 上传测试（将 your-api-key 替换为实际密钥）
+curl -X POST -H "X-API-Key: your-api-key" -F "images=@test.jpg" http://your-domain.com/api/upload
 
 # 获取图片列表
-curl http://your-domain.com/api/images
+curl -H "X-API-Key: your-api-key" http://your-domain.com/api/images
 ```
 
 ## 前端配置
