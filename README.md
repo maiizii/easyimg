@@ -4,4 +4,4 @@
 2，根据server里的说明，在VPS上部署后端
 好了，可以使用了，打开你的前台网页，设置里填入你server的API地址就行
 
-在https://github.com/ceocok/fake-nodeimage基础上修改
+在https://github.com/ceocok/fake-nodeimage 基础上修改
