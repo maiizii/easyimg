@@ -83,7 +83,12 @@ NODE_ENV=production
 ALLOWED_ORIGINS=
 # API 密钥，可在前端的「API 接口」页面生成，多个密钥用逗号分隔
 API_KEY=
+# （可选）前端打包产物所在目录，配置后后端会托管该目录
+# 例：FRONTEND_DIST_DIR=..
 ```
+
+> 提示：后端现在会自动加载与 `server.js` 同目录或进程当前工作目录下的 `.env` 文件，
+> 因此只需在部署目录创建并更新 `.env` 后重新启动服务即可生效。
 
 ## 安全建议
 
@@ -107,7 +112,17 @@ curl -H "X-API-Key: your-api-key" http://your-domain.com/api/images
 
 ## 前端配置
 
-部署完成后，在前端的设置面板中输入您的API地址：
+### 与前端使用同一域名
+
+如果希望通过同一个域名同时提供前端页面与 API（例如统一使用 `https://img.example.com`），
+可以将前端打包后的静态资源路径配置到 `FRONTEND_DIST_DIR` 环境变量。后端会自动托管该目录下的静态资源，
+并为非 `/api`、`/images` 请求返回 `index.html`，无需单独部署前端静态站点。请确保该目录仅包含可公开访问的前端文件，
+不要把 `.env` 或其他后端敏感内容放在该目录内。
+
+例如：
+
+```bash
+FRONTEND_DIST_DIR=/var/www/image-hosting-frontend
 ```
-https://your-domain.com
-```
+
+在重新启动服务后，直接访问 `https://img.example.com` 即会看到前端页面，API 地址同样为该域名根路径。
