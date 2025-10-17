@@ -28,10 +28,30 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 }
 
 // CORS配置 - 允许您的前端域名访问
-app.use(cors({
-  origin: '*', // 生产环境请改为您的前端域名，如：'https://yourdomain.com'
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'DELETE'],
-}));
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 

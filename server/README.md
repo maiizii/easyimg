@@ -79,11 +79,13 @@ sudo certbot --nginx -d your-domain.com
 ```bash
 PORT=3000
 NODE_ENV=production
+# 允许的前端域名，多个用逗号分隔，例如：https://imgup.example.com,https://another.example.com
+ALLOWED_ORIGINS=
 ```
 
 ## 安全建议
 
-1. **修改CORS配置**：在 `server.js` 中将 `origin: '*'` 改为您的前端域名
+1. **修改CORS配置**：通过 `ALLOWED_ORIGINS` 或直接在 `server.js` 中显式列出允许的前端域名，避免使用通配符
 2. **添加认证**：对于生产环境，建议添加API密钥验证
 3. **限流**：使用 `express-rate-limit` 防止滥用
 4. **定期备份**：定期备份 `uploads` 目录
