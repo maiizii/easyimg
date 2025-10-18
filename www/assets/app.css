@@ -45,7 +45,7 @@ body {
 }
 
 .admin-toolbar {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.75rem;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -83,12 +83,27 @@ body {
 }
 
 .admin-page-size select {
-  border-radius: 12px;
-  padding: 0.25rem 0.75rem;
-  border: 1px solid var(--border);
-  background: var(--surface);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border-radius: 14px;
+  padding: 0.45rem 2.5rem 0.45rem 0.9rem;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: var(--surface-soft)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M2 2.5L6 6l4-3.5' fill='none' stroke='%236366f1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    no-repeat right 0.9rem center / 12px 8px;
   font-weight: 600;
-  color: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.admin-page-size select:focus {
+  outline: none;
+  border-color: var(--primary-strong);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  background-color: #fff;
 }
 
 .admin-card .history-details span {
