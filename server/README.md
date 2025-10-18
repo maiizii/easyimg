@@ -85,8 +85,10 @@ NODE_ENV=production
 ALLOWED_ORIGINS=
 # 是否自动放行与当前 Host 相同的来源（默认 true，填写 false 可强制只使用 ALLOWED_ORIGINS 列表）
 ALLOW_SAME_HOST_ORIGIN=true
-# API 密钥，可在前端的「API 接口」页面生成，多个密钥用逗号分隔
-API_KEY=
+# 访问密码：前端生成专属 API 密钥时需要输入，务必设置一个足够复杂的值
+API_PAGE_PASSWORD=
+# （可选）API 密钥签名密钥：用于派生客户端专属密钥，不配置则默认使用 API_PAGE_PASSWORD 派生
+API_KEY_SECRET=
 # （可选）前端打包产物所在目录，配置后后端会托管该目录
 # 如果未配置，后端会尝试自动识别与 `server.js` 同级或上级目录中的前端构建目录
 # 例：FRONTEND_DIST_DIR=..
@@ -100,7 +102,7 @@ API_KEY=
 ## 安全建议
 
 1. **修改CORS配置**：通过 `ALLOWED_ORIGINS` 或直接在 `server.js` 中显式列出允许的前端域名，避免使用通配符
-2. **添加认证**：设置 `API_KEY`（或 `API_KEYS`） 环境变量启用内置的 API 密钥校验
+2. **添加认证**：设置 `API_PAGE_PASSWORD` 并妥善保管访问密码，可选配置 `API_KEY_SECRET` 以确保密钥在服务重启后仍然有效
 3. **限流**：使用 `express-rate-limit` 防止滥用
 4. **定期备份**：定期备份 `uploads` 目录
 
