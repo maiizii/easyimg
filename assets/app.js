@@ -1,7 +1,8 @@
 const storageKeys = {
   apiUrl: 'openimg:apiUrl',
   apiKey: 'openimg:apiKey',
-  history: 'openimg:history'
+  history: 'openimg:history',
+  autoUpload: 'openimg:autoUpload'
 };
 
 const state = {
@@ -9,7 +10,8 @@ const state = {
   apiKey: '',
   clientId: '',
   uploading: false,
-  history: []
+  history: [],
+  autoUpload: false
 };
 
 const el = (selector) => document.querySelector(selector);
@@ -24,6 +26,8 @@ const uploadButton = el('#upload-button');
 const triggerFileButton = el('#trigger-file');
 const refreshButton = el('#refresh-history');
 const clearHistoryButton = el('#clear-history');
+const clearPendingButton = el('#clear-pending');
+const resetUploadButton = el('#reset-upload');
 const navButtons = Array.from(document.querySelectorAll('.nav-button'));
 const viewSections = new Map(
   Array.from(document.querySelectorAll('.view')).map((section) => [section.id.replace('view-', ''), section])
@@ -33,6 +37,7 @@ const warnings = {
   history: el('#history-warning')
 };
 const generateApiKeyButton = el('#generate-api-key-button');
+const autoUploadToggle = el('#auto-upload');
 
 let statusTimer = null;
 let pendingFiles = [];
@@ -118,6 +123,7 @@ function loadPersistedState() {
 
   state.apiUrl = normalizedStoredUrl || defaultUrl;
   state.apiKey = localStorage.getItem(storageKeys.apiKey) || '';
+  state.autoUpload = localStorage.getItem(storageKeys.autoUpload) === '1';
 
   try {
     const savedHistory = JSON.parse(localStorage.getItem(storageKeys.history) || '[]');
@@ -137,6 +143,7 @@ function loadPersistedState() {
 function persistSettings() {
   localStorage.setItem(storageKeys.apiUrl, state.apiUrl);
   localStorage.setItem(storageKeys.apiKey, state.apiKey);
+  localStorage.setItem(storageKeys.autoUpload, state.autoUpload ? '1' : '0');
 }
 
 function persistHistory() {
@@ -152,6 +159,10 @@ function applySettingsToForm() {
   const keyInput = el('#apiKey');
   if (keyInput) {
     keyInput.value = state.apiKey;
+  }
+
+  if (autoUploadToggle) {
+    autoUploadToggle.checked = Boolean(state.autoUpload);
   }
 }
 
@@ -188,6 +199,49 @@ function formatSize(bytes) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
   return `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+function formatTimestamp(value) {
+  if (!value) {
+    return '时间未知';
+  }
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '时间未知';
+  }
+  return date.toLocaleString('zh-CN', { hour12: false });
+}
+
+function fileIdentity(file) {
+  return `${file.name}__${file.size}__${file.lastModified}`;
+}
+
+function mergeFileCollections(existing, incoming) {
+  const merged = [...existing];
+  const seen = new Set(existing.map(fileIdentity));
+
+  incoming.forEach((file) => {
+    const key = fileIdentity(file);
+    if (!seen.has(key)) {
+      merged.push(file);
+      seen.add(key);
+    }
+  });
+
+  return merged;
+}
+
+function clearFileSelection() {
+  if (!fileInput) return;
+  fileInput.value = '';
+  if (typeof DataTransfer !== 'undefined') {
+    try {
+      const transfer = new DataTransfer();
+      fileInput.files = transfer.files;
+    } catch (error) {
+      console.warn('DataTransfer 不可用，已跳过文件输入重置', error);
+    }
+  }
 }
 
 async function copyToClipboard(text) {
@@ -280,10 +334,13 @@ function createLinkTabs(name, directUrl) {
   const wrapper = document.createElement('div');
   wrapper.className = 'link-tabs';
 
+  const escapedNameForHtml = String(name || '').replace(/"/g, '&quot;');
+
   const tabs = [
-    { key: 'direct', label: '直链', value: directUrl },
+    { key: 'url', label: 'URL', value: directUrl },
     { key: 'markdown', label: 'Markdown', value: `![${name}](${directUrl})` },
-    { key: 'bbcode', label: 'BBCode', value: `[img]${directUrl}[/img]` }
+    { key: 'bbcode', label: 'BBCode', value: `[img]${directUrl}[/img]` },
+    { key: 'html', label: 'HTML', value: `<img src="${directUrl}" alt="${escapedNameForHtml}" />` }
   ];
 
   const nav = document.createElement('div');
@@ -359,25 +416,28 @@ function renderHistory(items) {
 
   items.forEach((item) => {
     const card = document.createElement('div');
-    card.className = 'result-item';
-
-    const header = document.createElement('div');
-    header.className = 'flex-row';
-    const sizeLabel = formatSize(item.size);
-    header.innerHTML = `<strong>${item.name}</strong><span class="badge">${sizeLabel}</span>`;
+    card.className = 'result-item history-card';
 
     const direct = buildFullUrl(item.url);
 
     const preview = document.createElement('img');
-    preview.className = 'image-preview';
+    preview.className = 'history-thumb';
     preview.src = direct;
     preview.alt = item.name;
     preview.loading = 'lazy';
 
-    const tabs = createLinkTabs(item.name, direct);
+    const content = document.createElement('div');
+    content.className = 'history-content';
 
-    const actions = document.createElement('div');
-    actions.className = 'result-actions';
+    const info = document.createElement('div');
+    info.className = 'history-info';
+
+    const titleRow = document.createElement('div');
+    titleRow.className = 'history-title-row';
+
+    const name = document.createElement('div');
+    name.className = 'history-name';
+    name.textContent = item.name;
 
     const storedName = (item.url || '').split('/').pop();
     const deleteBtn = document.createElement('button');
@@ -386,8 +446,22 @@ function renderHistory(items) {
     deleteBtn.textContent = '删除图片';
     deleteBtn.addEventListener('click', () => deleteImage(storedName || item.name));
 
-    actions.append(deleteBtn);
-    card.append(header, preview, tabs, actions);
+    titleRow.append(name, deleteBtn);
+
+    const details = document.createElement('div');
+    details.className = 'history-details';
+    const timestamp = formatTimestamp(item.uploadTime || item.createdAt || item.time);
+    const sizeLabel = formatSize(item.size);
+    details.textContent = `${timestamp} · ${sizeLabel}`;
+
+    info.append(titleRow, details);
+
+    const tabs = createLinkTabs(item.name, direct);
+    tabs.classList.add('history-tabs');
+
+    content.append(info, tabs);
+
+    card.append(preview, content);
     historyContainer.append(card);
   });
 }
@@ -463,21 +537,20 @@ async function refreshHistory() {
 function handleFiles(fileList) {
   const files = Array.from(fileList || []).filter((file) => file.type.startsWith('image/'));
   if (files.length === 0) {
-    pendingFiles = [];
-    if (fileInput) {
-      fileInput.value = '';
+    if (!pendingFiles.length) {
+      clearFileSelection();
+      renderPendingFiles(pendingFiles);
     }
-    renderPendingFiles(pendingFiles);
     showStatus('请选择图片文件', 'error');
     return;
   }
 
-  pendingFiles = files;
+  pendingFiles = mergeFileCollections(pendingFiles, files);
 
   if (typeof DataTransfer !== 'undefined' && fileInput) {
     try {
       const transfer = new DataTransfer();
-      files.forEach((file) => transfer.items.add(file));
+      pendingFiles.forEach((file) => transfer.items.add(file));
       fileInput.files = transfer.files;
     } catch (error) {
       console.warn('DataTransfer 不可用，已回退到内存存储', error);
@@ -485,7 +558,15 @@ function handleFiles(fileList) {
   }
 
   renderPendingFiles(pendingFiles);
-  showStatus(`已选择 ${files.length} 张图片`, 'success');
+  showStatus(`已添加 ${files.length} 张图片，共 ${pendingFiles.length} 张待上传`, 'success');
+
+  if (state.autoUpload) {
+    if (state.uploading) {
+      showStatus('已加入队列，将在当前上传完成后继续处理', 'success');
+      return;
+    }
+    window.requestAnimationFrame(() => handleUpload());
+  }
 }
 
 function getSelectedFiles() {
@@ -503,11 +584,18 @@ async function handleUpload(event) {
     return;
   }
 
+  if (state.uploading) {
+    showStatus('正在上传，请稍后', 'error');
+    return;
+  }
+
   const files = getSelectedFiles();
   if (!files || files.length === 0) {
     showStatus('请选择需要上传的图片', 'error');
     return;
   }
+
+  const uploadingKeys = new Set(files.map(fileIdentity));
 
   const formData = new FormData();
   files.forEach((file) => {
@@ -534,17 +622,36 @@ async function handleUpload(event) {
       throw new Error(payload.error || '上传失败');
     }
 
-    const uploaded = payload.files || [];
+    const now = new Date().toISOString();
+    const uploaded = (payload.files || []).map((item) => ({
+      ...item,
+      uploadTime: item.uploadTime || now
+    }));
     state.history = [...uploaded, ...state.history];
     persistHistory();
     renderResults(uploaded);
     renderHistory(state.history);
     showStatus(`成功上传 ${uploaded.length} 个文件`, 'success');
-    if (fileInput) {
-      fileInput.value = '';
+    clearFileSelection();
+    pendingFiles = pendingFiles.filter((file) => !uploadingKeys.has(fileIdentity(file)));
+
+    if (pendingFiles.length > 0) {
+      if (typeof DataTransfer !== 'undefined' && fileInput) {
+        try {
+          const transfer = new DataTransfer();
+          pendingFiles.forEach((file) => transfer.items.add(file));
+          fileInput.files = transfer.files;
+        } catch (error) {
+          console.warn('DataTransfer 不可用，已回退到内存存储', error);
+        }
+      }
     }
-    pendingFiles = [];
+
     renderPendingFiles(pendingFiles);
+
+    if (state.autoUpload && pendingFiles.length > 0) {
+      window.requestAnimationFrame(() => handleUpload());
+    }
   } catch (error) {
     console.error(error);
     showStatus(error.message || '上传失败，请稍后重试', 'error');
@@ -631,6 +738,17 @@ function setupEventListeners() {
     });
   }
 
+  if (autoUploadToggle) {
+    autoUploadToggle.addEventListener('change', (event) => {
+      state.autoUpload = event.target.checked;
+      persistSettings();
+      showStatus(state.autoUpload ? '已开启自动上传' : '已关闭自动上传', 'success');
+      if (state.autoUpload && pendingFiles.length > 0 && !state.uploading) {
+        window.requestAnimationFrame(() => handleUpload());
+      }
+    });
+  }
+
   navButtons.forEach((button) => {
     button.addEventListener('click', () => {
       if (button.disabled) {
@@ -678,13 +796,41 @@ function setupEventListeners() {
   fileInput.addEventListener('change', (event) => handleFiles(event.target.files));
   triggerFileButton.addEventListener('click', () => fileInput.click());
   uploadButton.addEventListener('click', handleUpload);
-  refreshButton.addEventListener('click', refreshHistory);
-  clearHistoryButton.addEventListener('click', () => {
-    state.history = [];
-    persistHistory();
-    renderHistory(state.history);
-    showStatus('已清空本地历史记录', 'success');
-  });
+
+  if (clearPendingButton) {
+    clearPendingButton.addEventListener('click', () => {
+      pendingFiles = [];
+      clearFileSelection();
+      renderPendingFiles(pendingFiles);
+      showStatus('已清空待上传文件', 'success');
+    });
+  }
+
+  if (resetUploadButton) {
+    resetUploadButton.addEventListener('click', () => {
+      pendingFiles = [];
+      clearFileSelection();
+      renderPendingFiles(pendingFiles);
+      if (resultsContainer) {
+        resultsContainer.innerHTML = '';
+        resultsContainer.classList.add('hidden');
+      }
+      showStatus('已重新开始上传流程', 'success');
+    });
+  }
+
+  if (refreshButton) {
+    refreshButton.addEventListener('click', refreshHistory);
+  }
+
+  if (clearHistoryButton) {
+    clearHistoryButton.addEventListener('click', () => {
+      state.history = [];
+      persistHistory();
+      renderHistory(state.history);
+      showStatus('已清空本地历史记录', 'success');
+    });
+  }
 
   document.addEventListener('paste', handlePaste);
 
