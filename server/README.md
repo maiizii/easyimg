@@ -77,7 +77,7 @@ sudo certbot --nginx -d your-domain.com
 
 ## 环境变量配置
 
-创建 `.env` 文件（可选）：
+在 `server` 目录中创建 `.env` 文件（可选）：
 ```bash
 PORT=3000
 NODE_ENV=production
@@ -89,7 +89,8 @@ ALLOW_SAME_HOST_ORIGIN=true
 API_PAGE_PASSWORD=
 # （可选）前端打包产物所在目录，配置后后端会托管该目录
 # 如果未配置，后端会尝试自动识别与 `server.js` 同级或上级目录中的前端构建目录
-# 例：FRONTEND_DIST_DIR=..
+# 示例：当前仓库内的静态页面位于 `../www`
+FRONTEND_DIST_DIR=../www
 ```
 
 > 可以直接复制项目内的 [`server/.env.example`](./.env.example) 为 `.env`，再根据部署环境修改对应值。

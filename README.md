@@ -1,11 +1,17 @@
 简易图床 EasyImg
 =================
 
-EasyImg 是一个前后端分离的轻量级图床方案，提供批量上传、历史管理和密钥保护等功能。仓库包含静态前端页面和 Node.js 后端服务，按需部署即可快速启用自托管图床，适合自用或小范围简易使用。
+EasyImg 是一个前后端分离的轻量级图床方案，提供批量上传、历史管理和密钥保护等功能。仓库现在按照“前端 `www/` + 后端 `server/`” 的结构划分，部署时可以按需选择托管方式。
+
+## 目录结构
+
+- `www/`：静态前端页面，包含 `index.html`、`assets/` 等可直接上传到 Web 服务器的文件。
+- `server/`：Node.js 后端服务，负责图片上传、存储与密钥管理。
+- `README.md`：当前说明文档，其余部署说明请参考 `server/README.md`。
 
 ## 部署步骤
 
-1. **部署前端**：将除 `server` 目录外的所有文件上传到站点根目录（例如 `/var/www/html` 或宝塔面板网站目录）。如果希望由后端托管静态文件，可在 `.env` 中通过 `FRONTEND_DIST_DIR=..` 指向当前项目根目录。
+1. **部署前端**：将 `www` 目录中的全部内容上传到网站目录（例如 `/var/www/html` 或宝塔面板站点目录）。如果希望由后端托管前端静态文件，可在后端环境变量中设置 `FRONTEND_DIST_DIR=../www`，让服务自动返回该目录下的页面。
 2. **部署后端**：按照 [`server/README.md`](server/README.md) 的指引在 VPS 上安装依赖并启动 Node.js 服务。请复制 [`server/.env.example`](server/.env.example) 为 `.env`，设置 `API_PAGE_PASSWORD`、`ALLOWED_ORIGINS` 等安全项后再启动服务。
 3. **前端配置**：访问前端页面，在「设置」里填写后端地址并点击「生成」获取专属 API 密钥，最后保存配置即可开始上传。
 
@@ -20,7 +26,7 @@ EasyImg 是一个前后端分离的轻量级图床方案，提供批量上传、
 
 ## 使用方法
 
-1. **完成部署**：确保前端已经上传到站点目录，后端依照 `server/README.md` 中的步骤启动，并在 `.env` 里配置 `API_PAGE_PASSWORD` 等必要变量。
+1. **完成部署**：确保前端已上传到静态站点或由后端托管，后端依照 `server/README.md` 中的步骤启动，并在 `server/.env` 里配置 `API_PAGE_PASSWORD` 等必要变量。
 2. **访问前端站点**：使用浏览器打开部署好的网页，首次进入会提示前往「设置」。
 3. **配置后端信息**：在设置面板中填入后端 API 地址（例如 `https://img.example.com/api`）以及你在后端 `.env` 中设置的 `API_PAGE_PASSWORD`。
 4. **生成专属密钥**：点击「生成」按钮创建自己的 API 密钥，页面会自动保存密钥和接口地址。
@@ -40,7 +46,7 @@ server {
     listen [::]:443 ssl;
     server_name img.example.com;
 
-    root /mnt/vdb/example.com/easyimg; # 前端静态文件目录
+    root /mnt/vdb/example.com/easyimg/www; # 前端静态文件目录
     index index.html;
 
     ssl_certificate /etc/nginx/ssl/fullchain.cer;
@@ -77,7 +83,7 @@ server {
 }
 ```
 
-如果后端通过 `FRONTEND_DIST_DIR` 托管了构建文件，也可以直接将整个域名代理到 Node.js：
+如果后端通过 `FRONTEND_DIST_DIR` 托管了前端构建文件，也可以直接将整个域名代理到 Node.js：
 
 ```nginx
 server {
