@@ -25,6 +25,18 @@
   box-sizing: border-box;
 }
 
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -61,9 +73,10 @@ body {
 }
 
 .brand-mark {
-  width: 3rem;
-  height: 3rem;
+  width: 65px;
+  height: auto;
   display: block;
+  flex-shrink: 0;
   filter: drop-shadow(0 8px 18px rgba(99, 102, 241, 0.45));
 }
 
@@ -123,7 +136,7 @@ body {
 
 .content {
   flex: 1;
-  width: min(1100px, 100%);
+  width: min(1280px, 100%);
   margin: 0 auto;
   padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 4vw, 3rem) 4rem;
 }
@@ -142,6 +155,10 @@ body {
   padding: clamp(1.5rem, 4vw, 2.5rem);
   box-shadow: 0 30px 70px rgba(79, 70, 229, 0.12);
   border: 1px solid var(--border);
+}
+
+#view-upload .panel {
+  padding: clamp(2.25rem, 5vw, 3.5rem);
 }
 
 .panel + .results-list {
@@ -197,10 +214,24 @@ body {
   border: 2px dashed rgba(99, 102, 241, 0.35);
   background: var(--primary-soft);
   border-radius: 24px;
-  padding: clamp(1.5rem, 4vw, 2.5rem);
+  padding: clamp(2rem, 5vw, 3rem);
   text-align: center;
-  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease,
+    background 0.2s ease;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1.25rem;
+  min-height: clamp(320px, 50vh, 420px);
+}
+
+.upload-area:hover {
+  border-color: rgba(79, 70, 229, 0.75);
+  background: rgba(99, 102, 241, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 35px rgba(99, 102, 241, 0.18);
 }
 
 .upload-area:focus-visible {
@@ -210,18 +241,13 @@ body {
 
 .upload-area.dragover {
   border-color: var(--primary-strong);
-  transform: translateY(-4px);
-  box-shadow: 0 25px 40px rgba(99, 102, 241, 0.22);
+  transform: translateY(-6px);
+  box-shadow: 0 28px 45px rgba(99, 102, 241, 0.28);
+  background: rgba(99, 102, 241, 0.28);
 }
-
-.dropzone-icon {
-  font-size: 2.75rem;
-  margin-bottom: 0.75rem;
-}
-
 .dropzone-title {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 600;
 }
 

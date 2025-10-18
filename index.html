@@ -28,12 +28,11 @@
         <section id="view-upload" class="view active" aria-labelledby="upload-title">
           <div class="panel">
             <div class="panel-header">
-              <h2 id="upload-title">上传图片</h2>
+              <h2 id="upload-title" class="visually-hidden">上传图片</h2>
               <p class="muted">直接拖拽或点击选择文件，支持一次上传多张图片，最大 10 MB / 张</p>
               <p id="upload-warning" class="warning hidden">⚠️ 请先在设置中保存 API 地址和密钥后再上传图片</p>
             </div>
             <div class="upload-area" id="upload-dropzone" tabindex="0" role="button" aria-label="点击或拖拽上传图片">
-              <div class="dropzone-icon">⬆️</div>
               <p class="dropzone-title">拖拽或粘贴图片到这里，或点击选择</p>
               <p class="dropzone-hint">支持 PNG、JPG、GIF 等常见格式，也可直接从剪贴板粘贴</p>
               <button type="button" class="secondary" id="trigger-file">选择图片</button>
