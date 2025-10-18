@@ -10,13 +10,18 @@
   <body>
     <div class="app-shell">
       <header class="topbar">
-        <div class="brand">
+        <a
+          href="#"
+          class="brand brand-link"
+          data-view-link="upload"
+          aria-label="返回上传图片页"
+        >
           <img src="/logo.png" alt="简易图床 logo" class="brand-mark brand-logo" />
           <div class="brand-text">
             <h1>简易图床</h1>
             <p>快速上传、管理与分享图片</p>
           </div>
-        </div>
+        </a>
         <nav class="topnav" aria-label="主要功能">
           <button type="button" class="nav-button active" data-view="upload">上传图片</button>
           <button type="button" class="nav-button" data-view="history">管理图片</button>
@@ -100,6 +105,20 @@
       </main>
 
       <div id="status" class="toast" role="status" aria-live="polite"></div>
+
+      <footer class="site-footer" role="contentinfo">
+        <div class="footer-content">
+          <span class="footer-copy">© 2025 EasyImg</span>
+          <span class="footer-powered">
+            Powered by
+            <a
+              href="https://github.com/maiizii/easyimg"
+              target="_blank"
+              rel="noopener noreferrer"
+            >MaiiZii</a>
+          </span>
+        </div>
+      </footer>
     </div>
 
     <script type="module" src="/assets/app.js"></script>

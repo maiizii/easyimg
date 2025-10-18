@@ -28,6 +28,7 @@ const refreshButton = el('#refresh-history');
 const clearPendingButton = el('#clear-pending');
 const resetUploadButton = el('#reset-upload');
 const navButtons = Array.from(document.querySelectorAll('.nav-button'));
+const homeLinks = Array.from(document.querySelectorAll('[data-view-link="upload"]'));
 const viewSections = new Map(
   Array.from(document.querySelectorAll('.view')).map((section) => [section.id.replace('view-', ''), section])
 );
@@ -869,6 +870,13 @@ function setupEventListeners() {
       }
     });
   }
+
+  homeLinks.forEach((link) => {
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+      setActiveView('upload');
+    });
+  });
 
   navButtons.forEach((button) => {
     button.addEventListener('click', () => {
