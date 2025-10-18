@@ -447,6 +447,19 @@ app.get('/api/images', requireApiKey, (req, res) => {
         size: stats.size,
         uploadTime: stats.mtime
       };
+    }).sort((a, b) => {
+      const aTime = new Date(a.uploadTime).getTime();
+      const bTime = new Date(b.uploadTime).getTime();
+      if (!Number.isNaN(bTime) && !Number.isNaN(aTime)) {
+        return bTime - aTime;
+      }
+      if (!Number.isNaN(bTime)) {
+        return 1;
+      }
+      if (!Number.isNaN(aTime)) {
+        return -1;
+      }
+      return (b.name || '').localeCompare(a.name || '');
     });
 
     res.json({
