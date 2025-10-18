@@ -25,7 +25,6 @@ const fileInput = el('#imageFiles');
 const uploadButton = el('#upload-button');
 const triggerFileButton = el('#trigger-file');
 const refreshButton = el('#refresh-history');
-const clearHistoryButton = el('#clear-history');
 const clearPendingButton = el('#clear-pending');
 const resetUploadButton = el('#reset-upload');
 const navButtons = Array.from(document.querySelectorAll('.nav-button'));
@@ -78,6 +77,40 @@ function uint8ArrayToHex(buffer) {
   return Array.from(buffer)
     .map((value) => value.toString(16).padStart(2, '0'))
     .join('');
+}
+
+function generateRandomString(length = 8) {
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+
+  if (window.crypto?.getRandomValues) {
+    const values = new Uint8Array(length);
+    window.crypto.getRandomValues(values);
+    result = Array.from(values, (value) => alphabet[value % alphabet.length]).join('');
+  } else {
+    for (let index = 0; index < length; index += 1) {
+      const randomIndex = Math.floor(Math.random() * alphabet.length);
+      result += alphabet[randomIndex];
+    }
+  }
+
+  return result;
+}
+
+function getFileExtension(file) {
+  if (!file || typeof file.name !== 'string') {
+    return '';
+  }
+
+  const match = file.name.match(/\.([a-zA-Z0-9]{1,10})$/);
+  return match ? `.${match[1].toLowerCase()}` : '';
+}
+
+function generateStoredFilename(file) {
+  const timestamp = Date.now().toString(36);
+  const random = generateRandomString(6);
+  const extension = getFileExtension(file);
+  return `img_${timestamp}_${random}${extension}`;
 }
 
 async function computeClientId() {
@@ -420,11 +453,20 @@ function renderHistory(items) {
 
     const direct = buildFullUrl(item.url);
 
+    const previewLink = document.createElement('a');
+    previewLink.className = 'thumb-link';
+    previewLink.href = direct;
+    previewLink.target = '_blank';
+    previewLink.rel = 'noopener noreferrer';
+    previewLink.title = '点击查看大图';
+
     const preview = document.createElement('img');
     preview.className = 'history-thumb';
     preview.src = direct;
     preview.alt = item.name;
     preview.loading = 'lazy';
+
+    previewLink.append(preview);
 
     const content = document.createElement('div');
     content.className = 'history-content';
@@ -461,7 +503,7 @@ function renderHistory(items) {
 
     content.append(info, tabs);
 
-    card.append(preview, content);
+    card.append(previewLink, content);
     historyContainer.append(card);
   });
 }
@@ -599,7 +641,8 @@ async function handleUpload(event) {
 
   const formData = new FormData();
   files.forEach((file) => {
-    formData.append('images', file, file.name);
+    const storedName = generateStoredFilename(file);
+    formData.append('images', file, storedName);
   });
 
   state.uploading = true;
@@ -691,22 +734,54 @@ function renderResults(files) {
   files.forEach((item) => {
     const direct = buildFullUrl(item.url);
     const card = document.createElement('div');
-    card.className = 'result-item';
+    card.className = 'result-item history-card upload-card';
 
-    const header = document.createElement('div');
-    header.className = 'flex-row';
-    const sizeLabel = formatSize(item.size);
-    header.innerHTML = `<strong>${item.name}</strong><span class="badge">${sizeLabel}</span>`;
+    const previewLink = document.createElement('a');
+    previewLink.className = 'thumb-link';
+    previewLink.href = direct;
+    previewLink.target = '_blank';
+    previewLink.rel = 'noopener noreferrer';
+    previewLink.title = '点击查看大图';
 
     const preview = document.createElement('img');
-    preview.className = 'image-preview';
+    preview.className = 'history-thumb';
     preview.src = direct;
     preview.alt = item.name;
     preview.loading = 'lazy';
 
+    previewLink.append(preview);
+
+    const content = document.createElement('div');
+    content.className = 'history-content';
+
+    const info = document.createElement('div');
+    info.className = 'history-info';
+
+    const titleRow = document.createElement('div');
+    titleRow.className = 'history-title-row';
+
+    const name = document.createElement('div');
+    name.className = 'history-name';
+    name.textContent = item.name;
+
+    const sizeBadge = document.createElement('span');
+    sizeBadge.className = 'badge';
+    sizeBadge.textContent = formatSize(item.size);
+
+    titleRow.append(name, sizeBadge);
+
+    const details = document.createElement('div');
+    details.className = 'history-details';
+    const timestamp = formatTimestamp(item.uploadTime || item.createdAt || item.time);
+    details.textContent = timestamp ? `上传时间：${timestamp}` : '上传时间：刚刚';
+
+    info.append(titleRow, details);
+
     const tabs = createLinkTabs(item.name, direct);
 
-    card.append(header, preview, tabs);
+    content.append(info, tabs);
+
+    card.append(previewLink, content);
     resultsContainer.append(card);
   });
 }
@@ -821,15 +896,6 @@ function setupEventListeners() {
 
   if (refreshButton) {
     refreshButton.addEventListener('click', refreshHistory);
-  }
-
-  if (clearHistoryButton) {
-    clearHistoryButton.addEventListener('click', () => {
-      state.history = [];
-      persistHistory();
-      renderHistory(state.history);
-      showStatus('已清空本地历史记录', 'success');
-    });
   }
 
   document.addEventListener('paste', handlePaste);
