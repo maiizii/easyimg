@@ -159,6 +159,7 @@ body {
 
 #view-upload .panel {
   padding: clamp(2.25rem, 5vw, 3.5rem);
+  padding-top: clamp(1.25rem, 4vw, 2rem);
 }
 
 .panel + .results-list {
@@ -441,6 +442,17 @@ input[type="password"]:focus {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.history-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.history-name,
+.history-details {
+  line-height: 1.4;
 }
 
 .history-title-row {
