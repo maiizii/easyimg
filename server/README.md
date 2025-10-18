@@ -96,6 +96,8 @@ ALLOWED_ORIGINS=
 ALLOW_SAME_HOST_ORIGIN=true
 # 访问密码：前端生成专属 API 密钥时需要输入，务必设置一个足够复杂的值
 API_PAGE_PASSWORD=
+# 管理员后台密码：访问 https://your-domain/admin 时需要输入，留空则禁用管理员后台
+ADMIN_PASSWORD=
 # （可选）前端打包产物所在目录，配置后后端会托管该目录
 # 如果未配置，后端会尝试自动识别与 `server.js` 同级或上级目录中的前端构建目录
 # 示例：当前仓库内的静态页面位于 `../www`
@@ -106,6 +108,8 @@ FRONTEND_DIST_DIR=../www
 
 > 提示：后端现在会自动加载与 `server.js` 同目录或进程当前工作目录下的 `.env` 文件，
 > 因此只需在部署目录创建并更新 `.env` 后重新启动服务即可生效。
+
+配置 `ADMIN_PASSWORD` 后，可通过浏览器访问 `https://你的域名/admin` 打开管理员控制台。登录成功后即可分页查看所有客户端上传的图片，并可在后台直接删除违规内容。
 
 ## 首次生成 API 密钥
 
