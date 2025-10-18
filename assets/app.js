@@ -1,8 +1,8 @@
 const storageKeys = {
-  apiUrl: 'openimg:apiUrl',
-  apiKey: 'openimg:apiKey',
-  history: 'openimg:history',
-  autoUpload: 'openimg:autoUpload'
+  apiUrl: 'easyimg:apiUrl',
+  apiKey: 'easyimg:apiKey',
+  history: 'easyimg:history',
+  autoUpload: 'easyimg:autoUpload'
 };
 
 const state = {
