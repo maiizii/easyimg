@@ -384,6 +384,25 @@ input[type="password"]:focus {
   object-fit: contain;
 }
 
+.thumb-link {
+  display: block;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.thumb-link:focus-visible {
+  outline: 3px solid rgba(99, 102, 241, 0.55);
+  outline-offset: 2px;
+}
+
+.upload-card .badge {
+  align-self: center;
+}
+
+.upload-card .history-title-row {
+  align-items: center;
+}
+
 .history-content {
   display: flex;
   flex-direction: column;
