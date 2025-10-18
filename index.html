@@ -19,7 +19,7 @@
         </div>
         <nav class="topnav" aria-label="主要功能">
           <button type="button" class="nav-button active" data-view="upload">上传图片</button>
-          <button type="button" class="nav-button" data-view="history">历史记录</button>
+          <button type="button" class="nav-button" data-view="history">管理图片</button>
           <button type="button" class="nav-button" data-view="settings">设置</button>
         </nav>
       </header>
@@ -34,11 +34,12 @@
             </div>
             <div class="upload-area" id="upload-dropzone" tabindex="0" role="button" aria-label="点击或拖拽上传图片">
               <div class="dropzone-icon">⬆️</div>
-              <p class="dropzone-title">拖拽图片到这里或点击选择</p>
-              <p class="dropzone-hint">支持 PNG、JPG、GIF 等常见格式</p>
+              <p class="dropzone-title">拖拽或粘贴图片到这里，或点击选择</p>
+              <p class="dropzone-hint">支持 PNG、JPG、GIF 等常见格式，也可直接从剪贴板粘贴</p>
               <button type="button" class="secondary" id="trigger-file">选择图片</button>
               <input id="imageFiles" type="file" accept="image/*" multiple hidden />
             </div>
+            <div id="selected-files" class="pending-list hidden" aria-live="polite"></div>
             <div class="panel-actions">
               <button id="upload-button" type="button">开始上传</button>
               <button type="button" class="ghost" id="refresh-history">刷新图片列表</button>
@@ -51,9 +52,9 @@
         <section id="view-history" class="view" aria-labelledby="history-title">
           <div class="panel">
             <div class="panel-header">
-              <h2 id="history-title">历史上传</h2>
-              <p class="muted">查看最近上传的图片，支持复制链接或删除服务器上的文件</p>
-              <p id="history-warning" class="warning hidden">⚠️ 需要先配置 API 地址和密钥才能从服务器获取历史记录</p>
+              <h2 id="history-title">管理图片</h2>
+              <p class="muted">预览、复制链接或删除已上传的图片</p>
+              <p id="history-warning" class="warning hidden">⚠️ 需要先配置 API 地址和密钥才能从服务器获取图片列表</p>
             </div>
             <div id="history-list" class="results-list" aria-live="polite"></div>
           </div>
@@ -83,45 +84,6 @@
                 <button type="submit">保存配置</button>
               </div>
             </form>
-
-            <div class="api-cards settings-extras">
-              <div class="info-card">
-                <h3>客户端信息</h3>
-                <p class="muted">生成的密钥与下方的客户端标识绑定，可用于在其他设备上复用。</p>
-                <div class="info-item">
-                  <span class="info-label">客户端标识</span>
-                  <code id="client-id" class="info-value">计算中...</code>
-                  <button type="button" class="ghost" id="copy-client-id">复制</button>
-                </div>
-              </div>
-
-              <div class="info-card">
-                <h3>当前配置</h3>
-                <div class="info-item">
-                  <span class="info-label">API 地址</span>
-                  <code id="current-api" class="info-value">未配置</code>
-                  <button type="button" class="ghost" data-copy="current-api">复制</button>
-                </div>
-                <div class="info-item">
-                  <span class="info-label">API 密钥</span>
-                  <code id="current-key" class="info-value">未配置</code>
-                  <button type="button" class="ghost" data-copy="current-key">复制</button>
-                </div>
-              </div>
-
-              <div class="info-card">
-                <h3>示例命令</h3>
-                <p class="muted">使用 curl 调用上传接口：</p>
-                <pre class="code-block" id="example-upload">curl -X POST "https://api.example.com/api/upload" \
-  -H "X-API-Key: YOUR_API_KEY" \
-  -F "images=@/path/to/image.jpg"</pre>
-                <button type="button" class="ghost" data-copy="example-upload">复制命令</button>
-                <p class="muted">获取历史记录：</p>
-                <pre class="code-block" id="example-history">curl "https://api.example.com/api/images" \
-  -H "X-API-Key: YOUR_API_KEY"</pre>
-                <button type="button" class="ghost" data-copy="example-history">复制命令</button>
-              </div>
-            </div>
           </div>
         </section>
       </main>

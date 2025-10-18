@@ -17,6 +17,7 @@ const el = (selector) => document.querySelector(selector);
 const statusBox = el('#status');
 const resultsContainer = el('#upload-results');
 const historyContainer = el('#history-list');
+const pendingContainer = el('#selected-files');
 const dropzone = el('#upload-dropzone');
 const fileInput = el('#imageFiles');
 const uploadButton = el('#upload-button');
@@ -31,16 +32,11 @@ const warnings = {
   upload: el('#upload-warning'),
   history: el('#history-warning')
 };
-const currentApi = el('#current-api');
-const currentKey = el('#current-key');
-const exampleUpload = el('#example-upload');
-const exampleHistory = el('#example-history');
-const clientIdDisplay = el('#client-id');
-const copyClientIdButton = el('#copy-client-id');
 const generateApiKeyButton = el('#generate-api-key-button');
 
 let statusTimer = null;
 let pendingFiles = [];
+let pendingPreviewUrls = [];
 
 function showStatus(message, type = 'success') {
   if (!statusBox) return;
@@ -115,11 +111,6 @@ async function computeClientId() {
   return fallback.repeat(2).slice(0, 64);
 }
 
-function updateClientIdDisplay() {
-  if (!clientIdDisplay) return;
-  clientIdDisplay.textContent = state.clientId || '未获取';
-}
-
 function loadPersistedState() {
   const storedUrl = localStorage.getItem(storageKeys.apiUrl) || '';
   const normalizedStoredUrl = normalizeBaseUrl(storedUrl);
@@ -139,8 +130,8 @@ function loadPersistedState() {
 
   applySettingsToForm();
   renderHistory(state.history);
+  renderPendingFiles(pendingFiles);
   updateAvailability();
-  updateApiPreview();
 }
 
 function persistSettings() {
@@ -189,30 +180,14 @@ function buildFullUrl(path) {
   return `${state.apiUrl}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
-function buildApiBase() {
-  if (!state.apiUrl) {
-    return 'https://api.example.com/api';
+function formatSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return '未知大小';
   }
-  return `${state.apiUrl.replace(/\/+$/, '')}/api`;
-}
-
-function updateApiPreview() {
-  const apiBase = buildApiBase();
-  if (currentApi) {
-    currentApi.textContent = state.apiUrl || '未配置';
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
-  if (currentKey) {
-    currentKey.textContent = state.apiKey || '未配置';
-  }
-  if (exampleUpload) {
-    exampleUpload.textContent = `curl -X POST "${apiBase}/upload" \\
-  -H "X-API-Key: ${state.apiKey || 'YOUR_API_KEY'}" \\
-  -F "images=@/path/to/image.jpg"`;
-  }
-  if (exampleHistory) {
-    exampleHistory.textContent = `curl "${apiBase}/images" \\
-  -H "X-API-Key: ${state.apiKey || 'YOUR_API_KEY'}"`;
-  }
+  return `${(bytes / 1024).toFixed(1)} KB`;
 }
 
 async function copyToClipboard(text) {
@@ -225,7 +200,153 @@ async function copyToClipboard(text) {
   }
 }
 
+function renderPendingFiles(files) {
+  pendingPreviewUrls.forEach((url) => {
+    try {
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.warn('无法释放预览资源', error);
+    }
+  });
+  pendingPreviewUrls = [];
+
+  if (!pendingContainer) return;
+
+  pendingContainer.innerHTML = '';
+
+  if (!files || files.length === 0) {
+    pendingContainer.classList.add('hidden');
+    return;
+  }
+
+  pendingContainer.classList.remove('hidden');
+
+  const header = document.createElement('div');
+  header.className = 'flex-row pending-header';
+  header.innerHTML = `<strong>待上传文件</strong><span class="badge">${files.length} 个</span>`;
+  pendingContainer.append(header);
+
+  const grid = document.createElement('div');
+  grid.className = 'pending-grid';
+
+  files.forEach((file) => {
+    const item = document.createElement('div');
+    item.className = 'pending-item';
+
+    let previewUrl = '';
+    if (typeof URL !== 'undefined' && URL.createObjectURL) {
+      try {
+        previewUrl = URL.createObjectURL(file);
+        pendingPreviewUrls.push(previewUrl);
+      } catch (error) {
+        previewUrl = '';
+      }
+    }
+
+    if (previewUrl) {
+      const preview = document.createElement('img');
+      preview.className = 'pending-thumb';
+      preview.src = previewUrl;
+      preview.alt = file.name;
+      preview.loading = 'lazy';
+      item.append(preview);
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'pending-thumb placeholder';
+      placeholder.textContent = '预览不可用';
+      item.append(placeholder);
+    }
+
+    const meta = document.createElement('div');
+    meta.className = 'pending-meta';
+
+    const name = document.createElement('div');
+    name.className = 'pending-name';
+    name.textContent = file.name;
+
+    const size = document.createElement('div');
+    size.className = 'pending-size';
+    size.textContent = formatSize(file.size);
+
+    meta.append(name, size);
+    item.append(meta);
+    grid.append(item);
+  });
+
+  pendingContainer.append(grid);
+}
+
+function createLinkTabs(name, directUrl) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'link-tabs';
+
+  const tabs = [
+    { key: 'direct', label: '直链', value: directUrl },
+    { key: 'markdown', label: 'Markdown', value: `![${name}](${directUrl})` },
+    { key: 'bbcode', label: 'BBCode', value: `[img]${directUrl}[/img]` }
+  ];
+
+  const nav = document.createElement('div');
+  nav.className = 'link-tabs-nav';
+
+  const inputGroup = document.createElement('div');
+  inputGroup.className = 'link-tabs-input';
+
+  const field = document.createElement('input');
+  field.type = 'text';
+  field.readOnly = true;
+  field.className = 'link-tabs-field';
+  field.value = tabs[0].value;
+  field.setAttribute('aria-label', '图片链接');
+
+  const copyButton = document.createElement('button');
+  copyButton.type = 'button';
+  copyButton.className = 'icon-button';
+  copyButton.setAttribute('aria-label', '复制链接');
+  copyButton.innerText = '📋';
+
+  const buttons = [];
+
+  const setActive = (index) => {
+    buttons.forEach((button, idx) => {
+      button.classList.toggle('active', idx === index);
+    });
+    field.value = tabs[index].value;
+  };
+
+  tabs.forEach((tab, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'tab-button';
+    if (index === 0) {
+      button.classList.add('active');
+    }
+    button.textContent = tab.label;
+    button.addEventListener('click', () => {
+      if (!button.classList.contains('active')) {
+        setActive(index);
+      }
+    });
+    buttons.push(button);
+    nav.append(button);
+  });
+
+  const handleCopy = () => {
+    field.select();
+    copyToClipboard(field.value);
+  };
+
+  field.addEventListener('click', handleCopy);
+  copyButton.addEventListener('click', handleCopy);
+
+  inputGroup.append(field, copyButton);
+  wrapper.append(nav, inputGroup);
+
+  return wrapper;
+}
+
 function renderHistory(items) {
+  if (!historyContainer) return;
   historyContainer.innerHTML = '';
 
   if (!items || items.length === 0) {
@@ -242,54 +363,31 @@ function renderHistory(items) {
 
     const header = document.createElement('div');
     header.className = 'flex-row';
-    header.innerHTML = `<strong>${item.name}</strong><span class="badge">${(item.size / 1024).toFixed(1)} KB</span>`;
-
-    const linkList = document.createElement('div');
-    linkList.className = 'result-links';
+    const sizeLabel = formatSize(item.size);
+    header.innerHTML = `<strong>${item.name}</strong><span class="badge">${sizeLabel}</span>`;
 
     const direct = buildFullUrl(item.url);
 
-    const fullLink = document.createElement('code');
-    fullLink.textContent = direct;
+    const preview = document.createElement('img');
+    preview.className = 'image-preview';
+    preview.src = direct;
+    preview.alt = item.name;
+    preview.loading = 'lazy';
 
-    const markdown = document.createElement('code');
-    markdown.textContent = `![${item.name}](${direct})`;
-
-    const bbcode = document.createElement('code');
-    bbcode.textContent = `[img]${direct}[/img]`;
-
-    const storedName = (item.url || '').split('/').pop();
+    const tabs = createLinkTabs(item.name, direct);
 
     const actions = document.createElement('div');
     actions.className = 'result-actions';
 
-    const copyDirect = document.createElement('button');
-    copyDirect.type = 'button';
-    copyDirect.textContent = '复制直链';
-    copyDirect.addEventListener('click', () => copyToClipboard(direct));
-
-    const copyMarkdown = document.createElement('button');
-    copyMarkdown.type = 'button';
-    copyMarkdown.classList.add('ghost');
-    copyMarkdown.textContent = '复制 Markdown';
-    copyMarkdown.addEventListener('click', () => copyToClipboard(markdown.textContent));
-
-    const copyBBCode = document.createElement('button');
-    copyBBCode.type = 'button';
-    copyBBCode.classList.add('ghost');
-    copyBBCode.textContent = '复制 BBCode';
-    copyBBCode.addEventListener('click', () => copyToClipboard(bbcode.textContent));
-
+    const storedName = (item.url || '').split('/').pop();
     const deleteBtn = document.createElement('button');
     deleteBtn.type = 'button';
     deleteBtn.classList.add('danger');
     deleteBtn.textContent = '删除图片';
     deleteBtn.addEventListener('click', () => deleteImage(storedName || item.name));
 
-    actions.append(copyDirect, copyMarkdown, copyBBCode, deleteBtn);
-    linkList.append(fullLink, markdown, bbcode);
-    card.append(header, linkList, actions);
-
+    actions.append(deleteBtn);
+    card.append(header, preview, tabs, actions);
     historyContainer.append(card);
   });
 }
@@ -366,13 +464,17 @@ function handleFiles(fileList) {
   const files = Array.from(fileList || []).filter((file) => file.type.startsWith('image/'));
   if (files.length === 0) {
     pendingFiles = [];
+    if (fileInput) {
+      fileInput.value = '';
+    }
+    renderPendingFiles(pendingFiles);
     showStatus('请选择图片文件', 'error');
     return;
   }
 
   pendingFiles = files;
 
-  if (typeof DataTransfer !== 'undefined') {
+  if (typeof DataTransfer !== 'undefined' && fileInput) {
     try {
       const transfer = new DataTransfer();
       files.forEach((file) => transfer.items.add(file));
@@ -382,11 +484,12 @@ function handleFiles(fileList) {
     }
   }
 
+  renderPendingFiles(pendingFiles);
   showStatus(`已选择 ${files.length} 张图片`, 'success');
 }
 
 function getSelectedFiles() {
-  if (fileInput.files && fileInput.files.length > 0) {
+  if (fileInput?.files && fileInput.files.length > 0) {
     return Array.from(fileInput.files);
   }
   return pendingFiles;
@@ -437,8 +540,11 @@ async function handleUpload(event) {
     renderResults(uploaded);
     renderHistory(state.history);
     showStatus(`成功上传 ${uploaded.length} 个文件`, 'success');
-    fileInput.value = '';
+    if (fileInput) {
+      fileInput.value = '';
+    }
     pendingFiles = [];
+    renderPendingFiles(pendingFiles);
   } catch (error) {
     console.error(error);
     showStatus(error.message || '上传失败，请稍后重试', 'error');
@@ -449,7 +555,23 @@ async function handleUpload(event) {
   }
 }
 
+function handlePaste(event) {
+  const target = event.target;
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+    return;
+  }
+
+  const files = Array.from(event.clipboardData?.files || []).filter((file) => file.type.startsWith('image/'));
+  if (files.length === 0) {
+    return;
+  }
+
+  event.preventDefault();
+  handleFiles(files);
+}
+
 function renderResults(files) {
+  if (!resultsContainer) return;
   resultsContainer.innerHTML = '';
 
   if (!files || files.length === 0) {
@@ -464,51 +586,20 @@ function renderResults(files) {
     const card = document.createElement('div');
     card.className = 'result-item';
 
-    const title = document.createElement('div');
-    title.innerHTML = `<strong>${item.name}</strong> <span class="badge">${(item.size / 1024).toFixed(1)} KB</span>`;
+    const header = document.createElement('div');
+    header.className = 'flex-row';
+    const sizeLabel = formatSize(item.size);
+    header.innerHTML = `<strong>${item.name}</strong><span class="badge">${sizeLabel}</span>`;
 
     const preview = document.createElement('img');
+    preview.className = 'image-preview';
     preview.src = direct;
     preview.alt = item.name;
     preview.loading = 'lazy';
-    preview.style.maxHeight = '240px';
 
-    const linkList = document.createElement('div');
-    linkList.className = 'result-links';
+    const tabs = createLinkTabs(item.name, direct);
 
-    const directCode = document.createElement('code');
-    directCode.textContent = direct;
-
-    const markdownCode = document.createElement('code');
-    markdownCode.textContent = `![${item.name}](${direct})`;
-
-    const bbcode = document.createElement('code');
-    bbcode.textContent = `[img]${direct}[/img]`;
-
-    const actions = document.createElement('div');
-    actions.className = 'result-actions';
-
-    const copyDirect = document.createElement('button');
-    copyDirect.type = 'button';
-    copyDirect.textContent = '复制直链';
-    copyDirect.addEventListener('click', () => copyToClipboard(direct));
-
-    const copyMarkdown = document.createElement('button');
-    copyMarkdown.type = 'button';
-    copyMarkdown.classList.add('ghost');
-    copyMarkdown.textContent = '复制 Markdown';
-    copyMarkdown.addEventListener('click', () => copyToClipboard(markdownCode.textContent));
-
-    const copyBBCode = document.createElement('button');
-    copyBBCode.type = 'button';
-    copyBBCode.classList.add('ghost');
-    copyBBCode.textContent = '复制 BBCode';
-    copyBBCode.addEventListener('click', () => copyToClipboard(bbcode.textContent));
-
-    actions.append(copyDirect, copyMarkdown, copyBBCode);
-    linkList.append(directCode, markdownCode, bbcode);
-    card.append(title, preview, linkList, actions);
-
+    card.append(header, preview, tabs);
     resultsContainer.append(card);
   });
 }
@@ -535,7 +626,6 @@ function setupEventListeners() {
       state.apiKey = key;
       persistSettings();
       updateAvailability();
-      updateApiPreview();
       applySettingsToForm();
       showStatus('配置已保存', 'success');
     });
@@ -596,24 +686,7 @@ function setupEventListeners() {
     showStatus('已清空本地历史记录', 'success');
   });
 
-  document.querySelectorAll('[data-copy]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const target = document.getElementById(button.dataset.copy);
-      if (target) {
-        copyToClipboard(target.textContent.trim());
-      }
-    });
-  });
-
-  if (copyClientIdButton) {
-    copyClientIdButton.addEventListener('click', () => {
-      if (!state.clientId) {
-        showStatus('客户端标识尚未生成，请稍后再试', 'error');
-        return;
-      }
-      copyToClipboard(state.clientId);
-    });
-  }
+  document.addEventListener('paste', handlePaste);
 
   if (generateApiKeyButton) {
     generateApiKeyButton.addEventListener('click', handleGenerateApiKeyFromSettings);
@@ -664,7 +737,6 @@ async function handleGenerateApiKeyFromSettings() {
     persistSettings();
     applySettingsToForm();
     updateAvailability();
-    updateApiPreview();
     showStatus('已生成并填入 API 密钥', 'success');
   } catch (error) {
     console.error(error);
@@ -680,7 +752,6 @@ async function initializeApp() {
     state.clientId = '';
   }
 
-  updateClientIdDisplay();
   setActiveView('upload');
   setupEventListeners();
   loadPersistedState();
