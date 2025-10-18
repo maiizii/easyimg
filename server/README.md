@@ -1,8 +1,15 @@
 # 图床后端部署指南
 
-## VPS部署步骤
+## VPS 部署步骤
 
-### 1. 安装Node.js（如果还没有）
+### 1. 克隆仓库并进入 `server/`
+
+```bash
+git clone https://github.com/maiizii/easyimg.git
+cd easyimg/server
+```
+
+### 2. 安装 Node.js（如果还没有）
 ```bash
 # Ubuntu/Debian
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
@@ -13,42 +20,44 @@ curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
 sudo yum install -y nodejs
 ```
 
-### 2. 上传代码到VPS
-```bash
-# 在VPS上创建目录
-mkdir -p /var/www/image-hosting-backend
-cd /var/www/image-hosting-backend
-
-# 复制 server.js 和 package.json 到这个目录
-```
-
 ### 3. 安装依赖
 ```bash
 npm install
 ```
 
-### 4. 使用PM2运行（推荐）
+### 4. 配置环境变量
+
+```bash
+cp .env.example .env
+vim .env  # 按需修改 API_PAGE_PASSWORD、ALLOWED_ORIGINS 等配置
+```
+
+`.env` 会在服务启动时被自动加载。默认情况下，后端会托管仓库根目录下的 `www/` 静态页面，无需额外部署前端。
+
+### 5. 使用 PM2 运行（推荐）
 ```bash
 # 安装PM2
 sudo npm install -g pm2
 
 # 启动服务
-pm2 start server.js --name image-hosting
+pm2 start server.js --name easyimg
 
 # 设置开机自启
 pm2 startup
 pm2 save
 
 # 查看日志
-pm2 logs image-hosting
+pm2 logs easyimg
 
 # 重启服务
-pm2 restart image-hosting
+pm2 restart easyimg
 ```
 
-> **提示**：如果从仓库拉取了最新代码或收到 `MODULE_NOT_FOUND` 类似的报错，请重新运行 `npm install` 安装可能新增的依赖，再执行 `pm2 restart image-hosting` 重启服务。
+> **提示**：如果从仓库拉取了最新代码或收到 `MODULE_NOT_FOUND` 类似的报错，请重新运行 `npm install` 安装可能新增的依赖，再执行 `pm2 restart easyimg` 重启服务。
 
-### 5. 配置Nginx反向代理（可选但推荐）
+如果不想使用 PM2，也可以直接运行 `node server.js`，或结合系统服务管理器（如 `systemd`）守护进程。
+
+### 6. 配置 Nginx 反向代理（可选但推荐）
 ```nginx
 server {
     listen 80;
@@ -69,7 +78,7 @@ server {
 }
 ```
 
-### 6. 配置SSL（推荐使用Let's Encrypt）
+### 7. 配置 SSL（推荐使用 Let's Encrypt）
 ```bash
 sudo apt-get install certbot python3-certbot-nginx
 sudo certbot --nginx -d your-domain.com
@@ -77,7 +86,7 @@ sudo certbot --nginx -d your-domain.com
 
 ## 环境变量配置
 
-在 `server` 目录中创建 `.env` 文件（可选）：
+在 `server` 目录中创建 `.env` 文件：
 ```bash
 PORT=3000
 NODE_ENV=production
@@ -130,9 +139,9 @@ curl -H "X-API-Key: your-api-key" http://your-domain.com/api/images
 ### 与前端使用同一域名
 
 如果希望通过同一个域名同时提供前端页面与 API（例如统一使用 `https://img.example.com`），
-可以将前端打包后的静态资源路径配置到 `FRONTEND_DIST_DIR` 环境变量。后端会自动托管该目录下的静态资源，
-并为非 `/api`、`/images` 请求返回 `index.html`，无需单独部署前端静态站点。请确保该目录仅包含可公开访问的前端文件，
-不要把 `.env` 或其他后端敏感内容放在该目录内。如果未显式设置 `FRONTEND_DIST_DIR`，后端会尝试在 `server.js`
+默认情况下仓库自带的 `../www` 会被自动托管，无需设置额外变量。若需要替换前端资源，可以将新的构建产物放到其他目录，并在 `.env` 中调整 `FRONTEND_DIST_DIR`。
+后端会自动托管该目录下的静态资源，并为非 `/api`、`/images` 请求返回 `index.html`。
+请确保该目录仅包含可公开访问的前端文件，不要把 `.env` 或其他后端敏感内容放在该目录内。如果未显式设置 `FRONTEND_DIST_DIR`，后端会尝试在 `server.js`
 所在目录的上级位置自动寻找包含 `index.html` 的目录并托管。
 
 例如：
