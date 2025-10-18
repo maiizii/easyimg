@@ -5,7 +5,7 @@
 
 1. 将除 `server` 文件夹外的所有静态资源部署到站点目录（例如 `/var/www/html` 或宝塔面板对应的网站目录）。如果使用后端内置的静态托管功能，可在 `.env` 中通过 `FRONTEND_DIST_DIR=..` 指向当前项目根目录。
 2. 根据 `server/README.md` 的指引在 VPS 上部署 Node.js 后端。后端提供了一个完整的 [`server/.env.example`](server/.env.example) 文件，请复制为 `.env` 后设置 `API_PAGE_PASSWORD`、`ALLOWED_ORIGINS` 等安全项，重启服务即可生效。
-3. 打开前端页面，在「API 接口」页输入访问密码生成专属 API 密钥，再在「连接配置」中填写后端 API 地址与密钥即可开始上传。如果前后端使用同一域名，仅需填写 `https://你的域名` 即可。
+3. 打开前端页面，在「设置」中填写后端地址并点击「生成」按钮，输入访问密码后即可自动填入专属 API 密钥，随后保存配置即可开始上传。如果前后端使用同一域名，仅需填写 `https://你的域名` 即可。
 
 > **提示**：后端默认放行与当前访问 Host 相同的来源，即便未在 `ALLOWED_ORIGINS` 中列出，也可正常上传。如需强制仅允许白名单域名，请将 `.env` 中的 `ALLOW_SAME_HOST_ORIGIN` 设置为 `false`。
 

@@ -290,6 +290,21 @@ input[type="password"]:focus {
   gap: 0.65rem;
 }
 
+.input-with-action {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.input-with-action input {
+  flex: 1;
+}
+
+.input-with-action button {
+  margin-top: 0;
+  white-space: nowrap;
+}
+
 .form-label {
   font-weight: 600;
   font-size: 0.95rem;
@@ -382,6 +397,10 @@ input[type="password"]:focus {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.25rem;
+}
+
+.settings-extras {
+  margin-top: 2rem;
 }
 
 .info-card {

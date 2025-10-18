@@ -215,15 +215,6 @@ app.use(express.json());
 const apiPagePassword = (process.env.API_PAGE_PASSWORD || '').trim();
 
 const buildSecret = () => {
-  const configuredSecret = (process.env.API_KEY_SECRET || '').trim();
-
-  if (configuredSecret) {
-    return {
-      value: crypto.createHash('sha256').update(configuredSecret, 'utf8').digest('hex'),
-      ephemeral: false
-    };
-  }
-
   if (apiPagePassword) {
     return {
       value: crypto.createHash('sha256').update(apiPagePassword, 'utf8').digest('hex'),
@@ -232,7 +223,7 @@ const buildSecret = () => {
   }
 
   const randomSecret = crypto.randomBytes(32).toString('hex');
-  console.warn('API_KEY_SECRET 未配置，已使用临时密钥。重启服务后已生成的 API 密钥将失效。');
+  console.warn('API_PAGE_PASSWORD 未配置，已使用临时密钥。重启服务后已生成的 API 密钥将失效。');
   return { value: randomSecret, ephemeral: true };
 };
 
@@ -326,7 +317,7 @@ const requireApiKey = (req, res, next) => {
 
 app.post('/api/auth/api-key', (req, res) => {
   if (!apiPagePassword) {
-    return res.status(400).json({ error: 'API page password is not configured' });
+    return res.status(400).json({ error: '访问密码未配置，无法生成 API 密钥' });
   }
 
   const password = (req.body && req.body.password ? String(req.body.password) : '').trim();
