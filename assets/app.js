@@ -42,6 +42,37 @@ let statusTimer = null;
 let pendingFiles = [];
 let pendingPreviewUrls = [];
 
+function getItemTimestamp(item) {
+  if (!item || typeof item !== 'object') {
+    return 0;
+  }
+
+  const source = item.uploadTime || item.createdAt || item.time || item.timestamp;
+  if (!source) {
+    return 0;
+  }
+
+  const date = new Date(source);
+  const time = date.getTime();
+
+  if (!Number.isNaN(time)) {
+    return time;
+  }
+
+  const numeric = Number(source);
+  return Number.isNaN(numeric) ? 0 : numeric;
+}
+
+function sortHistoryItems(items) {
+  return [...(items || [])].sort((a, b) => {
+    const diff = getItemTimestamp(b) - getItemTimestamp(a);
+    if (diff !== 0) {
+      return diff;
+    }
+    return (b?.name || '').localeCompare(a?.name || '');
+  });
+}
+
 function showStatus(message, type = 'success') {
   if (!statusBox) return;
   statusBox.textContent = message;
@@ -161,7 +192,7 @@ function loadPersistedState() {
   try {
     const savedHistory = JSON.parse(localStorage.getItem(storageKeys.history) || '[]');
     if (Array.isArray(savedHistory)) {
-      state.history = savedHistory;
+      state.history = sortHistoryItems(savedHistory);
     }
   } catch (error) {
     state.history = [];
@@ -563,9 +594,10 @@ async function refreshHistory() {
 
     const payload = await response.json();
     if (payload.success && Array.isArray(payload.files)) {
-      state.history = payload.files;
+      const sorted = sortHistoryItems(payload.files);
+      state.history = sorted;
       persistHistory();
-      renderHistory(state.history);
+      renderHistory(sorted);
       showStatus('已刷新图片列表', 'success');
     } else {
       throw new Error('返回数据格式不正确');
@@ -670,10 +702,11 @@ async function handleUpload(event) {
       ...item,
       uploadTime: item.uploadTime || now
     }));
-    state.history = [...uploaded, ...state.history];
+    const updatedHistory = sortHistoryItems([...uploaded, ...state.history]);
+    state.history = updatedHistory;
     persistHistory();
     renderResults(uploaded);
-    renderHistory(state.history);
+    renderHistory(updatedHistory);
     showStatus(`成功上传 ${uploaded.length} 个文件`, 'success');
     clearFileSelection();
     pendingFiles = pendingFiles.filter((file) => !uploadingKeys.has(fileIdentity(file)));
