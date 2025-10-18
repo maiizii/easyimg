@@ -1,19 +1,23 @@
 简易图床 EasyImg
 =================
 
-EasyImg 是一个前后端分离的轻量级图床方案，提供批量上传、历史管理和密钥保护等功能。仓库现在按照“前端 `www/` + 后端 `server/`” 的结构划分，部署时可以按需选择托管方式。
+EasyImg 是一个轻量级的自建图床方案，提供批量上传、历史管理和密钥保护等功能。随着后端支持自动托管 `www/` 目录中的前端页面，部署时不再需要分别处理前后端——只要在服务器上克隆本仓库并运行 `server/` 即可对外提供服务。
 
 ## 目录结构
 
-- `www/`：静态前端页面，包含 `index.html`、`assets/` 等可直接上传到 Web 服务器的文件。
-- `server/`：Node.js 后端服务，负责图片上传、存储与密钥管理。
-- `README.md`：当前说明文档，其余部署说明请参考 `server/README.md`。
+- `www/`：静态前端页面，默认由后端托管，无需额外配置。
+- `server/`：Node.js 后端服务，负责图片上传、存储、鉴权和静态资源托管。
+- `README.md`：当前说明文档，其余部署细节请参考 [`server/README.md`](server/README.md)。
 
-## 部署步骤
+## 一体化部署步骤
 
-1. **部署前端**：将 `www` 目录中的全部内容上传到网站目录（例如 `/var/www/html` 或宝塔面板站点目录）。如果希望由后端托管前端静态文件，可在后端环境变量中设置 `FRONTEND_DIST_DIR=../www`，让服务自动返回该目录下的页面。
-2. **部署后端**：按照 [`server/README.md`](server/README.md) 的指引在 VPS 上安装依赖并启动 Node.js 服务。请复制 [`server/.env.example`](server/.env.example) 为 `.env`，设置 `API_PAGE_PASSWORD`、`ALLOWED_ORIGINS` 等安全项后再启动服务。
-3. **前端配置**：访问前端页面，在「设置」里填写后端地址并点击「生成」获取专属 API 密钥，最后保存配置即可开始上传。
+1. **拉取代码**：在服务器上安装 Git，选择目标目录后执行 `git clone https://github.com/maiizii/easyimg.git`，再进入 `easyimg` 目录。
+2. **安装 Node.js**：确保系统提供 Node.js 18+ 和 npm，可参考 [`server/README.md`](server/README.md#vps部署步骤) 中的安装命令。
+3. **初始化配置**：复制 [`server/.env.example`](server/.env.example) 为 `server/.env`，根据实际情况设置 `API_PAGE_PASSWORD`、`ALLOWED_ORIGINS` 等变量。默认情况下后端会自动托管仓库中的 `www/` 静态文件。
+4. **安装依赖并启动**：切换到 `server/` 目录执行 `npm install`，随后使用 `node server.js` 或 `pm2 start server.js --name easyimg` 启动服务。首次运行后可以通过 `pm2 save` 配置开机自启。
+5. **配置反向代理/HTTPS（可选）**：在 Nginx 或宝塔中将域名指向本机 `3000` 端口，并按照下方示例启用 HTTPS 与上传大小限制。
+
+完成以上步骤后访问你的域名即可看到前端界面，所有上传、删除等接口均通过同一域名的 `/api` 路径处理，无需再手动部署前端站点。
 
 > **提示**：后端默认放行与当前访问 Host 相同的来源，即便未写入 `ALLOWED_ORIGINS` 也可正常上传。如需强制白名单，请将 `.env` 中的 `ALLOW_SAME_HOST_ORIGIN` 设为 `false`。
 
@@ -24,19 +28,19 @@ EasyImg 是一个前后端分离的轻量级图床方案，提供批量上传、
 - 图片列表展示，支持刷新、复制链接、删除图片
 - 本地历史清空按钮，便于快速整理
 
-## 使用方法
+## 常见操作流程
 
-1. **完成部署**：确保前端已上传到静态站点或由后端托管，后端依照 `server/README.md` 中的步骤启动，并在 `server/.env` 里配置 `API_PAGE_PASSWORD` 等必要变量。
-2. **访问前端站点**：使用浏览器打开部署好的网页，首次进入会提示前往「设置」。
-3. **配置后端信息**：在设置面板中填入后端 API 地址（例如 `https://img.example.com/api`）以及你在后端 `.env` 中设置的 `API_PAGE_PASSWORD`。
-4. **生成专属密钥**：点击「生成」按钮创建自己的 API 密钥，页面会自动保存密钥和接口地址。
+1. **完成部署**：按照“一体化部署步骤”启动服务并确保反向代理正常。
+2. **访问站点**：使用浏览器打开域名，首次进入会提示前往「设置」。
+3. **配置后端信息**：在设置面板中填入当前域名作为 API 地址（例如 `https://img.example.com/api`）以及你在 `server/.env` 中设置的 `API_PAGE_PASSWORD`。
+4. **生成专属密钥**：点击「生成」按钮创建 API 密钥，页面会自动保存密钥和接口地址。
 5. **开始上传**：返回上传页拖拽或选择图片，系统会使用刚生成的密钥进行上传，并提供多种格式的引用链接。
 
 > 如果需要在多台设备使用，可重复上述步骤生成新的密钥；若密钥泄露，重新生成即可。
 
-## Nginx 单域名反向代理示例
+## Nginx 反向代理示例
 
-下方示例展示如何使用同一个域名（如 `img.example.com`）同时托管前端静态资源并将 `/api`、`/images` 代理到 Node.js 后端：
+以下配置适用于统一使用 `https://img.example.com` 域名，通过 Nginx 将外部请求转发到本机 `3000` 端口运行的 EasyImg 服务：
 
 ```nginx
 server {
@@ -45,57 +49,12 @@ server {
     listen 443 ssl;
     listen [::]:443 ssl;
     server_name img.example.com;
-
-    root /mnt/vdb/example.com/easyimg/www; # 前端静态文件目录
-    index index.html;
 
     ssl_certificate /etc/nginx/ssl/fullchain.cer;
     ssl_certificate_key /etc/nginx/ssl/private.key;
 
     client_max_body_size 10M;
 
-    location /api/ {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    location /images/ {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-}
-```
-
-如果后端通过 `FRONTEND_DIST_DIR` 托管了前端构建文件，也可以直接将整个域名代理到 Node.js：
-
-```nginx
-server {
-    listen 80;
-    listen [::]:80;
-    listen 443 ssl;
-    listen [::]:443 ssl;
-    server_name img.example.com;
-
-    ssl_certificate /etc/nginx/ssl/fullchain.cer;
-    ssl_certificate_key /etc/nginx/ssl/private.key;
-
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
@@ -110,6 +69,6 @@ server {
 }
 ```
 
-确保在启用反向代理前，后端服务已经在本地 `3000` 端口运行（例如使用 `pm2 start server.js`）。若访问返回 `502 Bad Gateway`，请检查 Node.js 进程状态或查看日志。
+确保在启用反向代理前，后端服务已经在本地 `3000` 端口运行（例如使用 `pm2 start server.js --name easyimg`）。若访问返回 `502 Bad Gateway`，请检查 Node.js 进程状态或查看日志。
 
 基于 https://github.com/ceocok/fake-nodeimage 修改。
