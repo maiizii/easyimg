@@ -133,9 +133,17 @@ body {
 }
 
 .footer-powered a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   color: inherit;
   font-weight: 400;
   text-decoration: none;
+}
+
+.footer-powered__icon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .footer-powered a:hover,
