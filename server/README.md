@@ -2,7 +2,7 @@
 
 ## VPS 部署步骤
 
-### 1. 克隆仓库并进入 `server/`
+### 1. 克隆仓库并进入 `server/`（如已克隆直接进入server目录）
 
 ```bash
 git clone https://github.com/maiizii/easyimg.git
