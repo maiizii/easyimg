@@ -127,6 +127,7 @@ const resolveFrontendDistDir = () => {
     }
   }
 
+  candidates.push(path.resolve(__dirname, '../www'));
   candidates.push(path.resolve(__dirname, '..'));
   candidates.push(path.resolve(__dirname, '../dist'));
   candidates.push(path.resolve(process.cwd(), 'dist'));
@@ -143,6 +144,28 @@ const resolveFrontendDistDir = () => {
 
 const FRONTEND_DIST_DIR = resolveFrontendDistDir();
 const hasFrontendBuild = Boolean(FRONTEND_DIST_DIR);
+
+const resolveAdminPagePath = () => {
+  const candidates = [];
+
+  if (FRONTEND_DIST_DIR) {
+    candidates.push(path.join(FRONTEND_DIST_DIR, 'admin.html'));
+  }
+
+  candidates.push(path.resolve(__dirname, '../www/admin.html'));
+  candidates.push(path.resolve(__dirname, 'admin.html'));
+  candidates.push(path.resolve(process.cwd(), 'admin.html'));
+
+  for (const filePath of candidates) {
+    if (filePath && fs.existsSync(filePath)) {
+      return filePath;
+    }
+  }
+
+  return null;
+};
+
+const ADMIN_PAGE_PATH = resolveAdminPagePath();
 
 // CORS配置 - 允许您的前端域名访问
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
@@ -281,6 +304,73 @@ const verifyApiKey = (rawKey) => {
 
   const valid = crypto.timingSafeEqual(providedBuffer, expectedBuffer);
   return valid ? { valid: true, clientId } : { valid: false };
+};
+
+const adminPassword = (process.env.ADMIN_PASSWORD || '').trim();
+const adminPasswordHash = adminPassword
+  ? crypto.createHash('sha256').update(adminPassword, 'utf8').digest()
+  : null;
+const ADMIN_SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
+const adminSessions = new Map();
+
+const createAdminToken = () => crypto.randomBytes(48).toString('hex');
+
+const touchAdminSession = (token) => {
+  if (!token) {
+    return null;
+  }
+
+  const session = adminSessions.get(token);
+  if (!session) {
+    return null;
+  }
+
+  if (session.expiresAt <= Date.now()) {
+    adminSessions.delete(token);
+    return null;
+  }
+
+  session.expiresAt = Date.now() + ADMIN_SESSION_TTL_MS;
+  adminSessions.set(token, session);
+  return session;
+};
+
+const verifyAdminPassword = (password) => {
+  if (!adminPasswordHash) {
+    return false;
+  }
+
+  const provided = Buffer.from(crypto.createHash('sha256').update(password || '', 'utf8').digest());
+
+  if (provided.length !== adminPasswordHash.length) {
+    return false;
+  }
+
+  try {
+    return crypto.timingSafeEqual(provided, adminPasswordHash);
+  } catch (error) {
+    return false;
+  }
+};
+
+const requireAdminAuth = (req, res, next) => {
+  const headerToken = req.get('x-admin-token');
+  const queryToken = req.query && req.query.adminToken ? String(req.query.adminToken).trim() : '';
+  const token = (headerToken || '').trim() || queryToken;
+
+  if (!token) {
+    return res.status(401).json({ error: '未授权' });
+  }
+
+  const session = touchAdminSession(token);
+
+  if (!session) {
+    return res.status(401).json({ error: '登录已过期，请重新登录' });
+  }
+
+  req.adminToken = token;
+  req.adminSession = session;
+  return next();
 };
 
 const resolveClientDirectory = (clientId) => {
@@ -472,10 +562,163 @@ app.get('/api/images', requireApiKey, (req, res) => {
   }
 });
 
+const listClientDirectories = () => {
+  try {
+    return fs
+      .readdirSync(UPLOAD_DIR, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && CLIENT_ID_PATTERN.test(entry.name))
+      .map((entry) => entry.name);
+  } catch (error) {
+    console.error('读取客户端目录失败:', error);
+    return [];
+  }
+};
+
+const collectAllImages = (req) => {
+  const result = [];
+  const clients = listClientDirectories();
+
+  clients.forEach((clientId) => {
+    const clientDir = path.join(UPLOAD_DIR, clientId);
+
+    let files = [];
+    try {
+      files = fs.readdirSync(clientDir, { withFileTypes: true });
+    } catch (error) {
+      console.warn(`读取目录失败: ${clientDir}`, error);
+      return;
+    }
+
+    files
+      .filter((entry) => entry.isFile())
+      .forEach((entry) => {
+        const filePath = path.join(clientDir, entry.name);
+
+        try {
+          const stats = fs.statSync(filePath);
+          result.push({
+            clientId,
+            name: entry.name,
+            size: stats.size,
+            uploadTime: stats.mtime,
+            url: `/images/${clientId}/${entry.name}`,
+            fullUrl: `${req.protocol}://${req.get('host')}/images/${clientId}/${entry.name}`
+          });
+        } catch (error) {
+          console.warn(`读取文件信息失败: ${filePath}`, error);
+        }
+      });
+  });
+
+  return result.sort((a, b) => {
+    const aTime = new Date(a.uploadTime).getTime();
+    const bTime = new Date(b.uploadTime).getTime();
+    if (!Number.isNaN(bTime) && !Number.isNaN(aTime) && bTime !== aTime) {
+      return bTime - aTime;
+    }
+    return (b.name || '').localeCompare(a.name || '');
+  });
+};
+
+const normalizePositiveInteger = (value, fallback) => {
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return parsed;
+};
+
+app.post('/api/admin/login', (req, res) => {
+  if (!adminPasswordHash) {
+    return res.status(503).json({ error: '管理员功能未启用' });
+  }
+
+  const password = (req.body && req.body.password ? String(req.body.password) : '').trim();
+
+  if (!password || !verifyAdminPassword(password)) {
+    return res.status(401).json({ error: '管理员密码不正确' });
+  }
+
+  const token = createAdminToken();
+  const expiresAt = Date.now() + ADMIN_SESSION_TTL_MS;
+  adminSessions.set(token, { token, createdAt: Date.now(), expiresAt });
+
+  return res.json({ success: true, token, expiresAt });
+});
+
+app.post('/api/admin/logout', requireAdminAuth, (req, res) => {
+  if (req.adminToken) {
+    adminSessions.delete(req.adminToken);
+  }
+  res.json({ success: true });
+});
+
+app.get('/api/admin/session', requireAdminAuth, (req, res) => {
+  const session = req.adminSession || touchAdminSession(req.adminToken);
+  res.json({ success: true, token: req.adminToken, expiresAt: session ? session.expiresAt : null });
+});
+
+app.get('/api/admin/images', requireAdminAuth, (req, res) => {
+  const page = normalizePositiveInteger(req.query.page, 1);
+  const pageSize = normalizePositiveInteger(req.query.pageSize, 30);
+
+  const allImages = collectAllImages(req);
+  const total = allImages.length;
+  const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
+  const safePage = totalPages === 0 ? 1 : Math.min(page, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const files = total === 0 ? [] : allImages.slice(startIndex, startIndex + pageSize);
+
+  res.json({
+    success: true,
+    files,
+    pagination: {
+      page: safePage,
+      pageSize,
+      total,
+      totalPages
+    }
+  });
+});
+
+app.delete('/api/admin/images/:clientId/:filename', requireAdminAuth, (req, res) => {
+  const clientId = (req.params.clientId || '').toLowerCase();
+  const filename = req.params.filename || '';
+
+  if (!CLIENT_ID_PATTERN.test(clientId)) {
+    return res.status(400).json({ error: '非法的客户端标识' });
+  }
+
+  const clientDir = resolveClientDirectory(clientId);
+  const targetPath = path.resolve(clientDir, filename);
+
+  if (!targetPath.startsWith(clientDir)) {
+    return res.status(400).json({ error: '非法的文件路径' });
+  }
+
+  if (!fs.existsSync(targetPath)) {
+    return res.status(404).json({ error: '文件不存在' });
+  }
+
+  try {
+    fs.unlinkSync(targetPath);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('管理员删除图片失败:', error);
+    res.status(500).json({ error: '删除失败' });
+  }
+});
+
 // 健康检查接口
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: '图床服务运行正常' });
 });
+
+if (ADMIN_PAGE_PATH) {
+  app.get('/admin', (req, res) => {
+    res.sendFile(ADMIN_PAGE_PATH);
+  });
+}
 
 if (hasFrontendBuild) {
   app.use(express.static(FRONTEND_DIST_DIR, {

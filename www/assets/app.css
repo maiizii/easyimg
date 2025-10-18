@@ -44,6 +44,59 @@ body {
   color: var(--text);
 }
 
+.admin-toolbar {
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.admin-summary {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.admin-pagination {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-pagination .ghost {
+  min-width: 88px;
+}
+
+.admin-page-info {
+  font-weight: 600;
+  color: var(--primary-strong);
+}
+
+.admin-page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.admin-page-size select {
+  border-radius: 12px;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-weight: 600;
+  color: inherit;
+}
+
+.admin-card .history-details span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .app-shell {
   min-height: 100vh;
   display: flex;

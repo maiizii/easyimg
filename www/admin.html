@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>管理员控制台 - 简易图床</title>
+    <meta
+      name="description"
+      content="简易图床管理员控制台，可集中审核、浏览与删除所有上传的图片"
+    />
+    <link rel="stylesheet" href="/assets/app.css" />
+  </head>
+  <body>
+    <div class="app-shell admin-shell">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <a href="/" class="brand brand-link" aria-label="返回前台页面">
+            <img src="/logo.png" alt="简易图床 logo" class="brand-mark brand-logo" />
+            <div class="brand-text">
+              <h1>简易图床 · 管理员</h1>
+              <p>集中浏览与管理所有上传图片</p>
+            </div>
+          </a>
+          <nav class="topnav" aria-label="管理员导航">
+            <span class="nav-button active" aria-current="page">控制台</span>
+          </nav>
+        </div>
+      </header>
+
+      <main class="content" id="admin-main">
+        <section id="admin-login" class="view active" aria-labelledby="admin-login-title">
+          <div class="panel">
+            <div class="panel-header">
+              <h2 id="admin-login-title">管理员登录</h2>
+              <p class="muted">请输入在服务器 <code>.env</code> 中配置的管理员密码以继续</p>
+            </div>
+            <form id="admin-login-form" class="form-grid single-column">
+              <label class="form-item">
+                <span class="form-label">管理员密码</span>
+                <input id="admin-password" type="password" autocomplete="current-password" required />
+              </label>
+              <div class="form-actions">
+                <button type="submit" id="admin-login-button">登录</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section id="admin-dashboard" class="view" aria-labelledby="admin-dashboard-title">
+          <div class="panel">
+            <div class="panel-header with-actions">
+              <div class="panel-header-main">
+                <h2 id="admin-dashboard-title">全部图片</h2>
+                <p class="muted">可分页浏览所有客户端上传的图片，并支持快速删除</p>
+              </div>
+              <div class="panel-header-actions">
+                <button type="button" class="ghost" id="admin-refresh">刷新列表</button>
+                <button type="button" class="ghost" id="admin-logout">退出登录</button>
+              </div>
+            </div>
+
+            <div class="admin-toolbar" role="group" aria-label="分页与过滤工具">
+              <div class="admin-summary" id="admin-summary"></div>
+              <div class="admin-pagination">
+                <button type="button" class="ghost" id="admin-prev-page">上一页</button>
+                <span id="admin-page-info" class="admin-page-info">第 1 页</span>
+                <button type="button" class="ghost" id="admin-next-page">下一页</button>
+                <label class="admin-page-size">
+                  <span>每页</span>
+                  <select id="admin-page-size">
+                    <option value="12">12</option>
+                    <option value="24" selected>24</option>
+                    <option value="36">36</option>
+                    <option value="48">48</option>
+                  </select>
+                  <span>项</span>
+                </label>
+              </div>
+            </div>
+
+            <div id="admin-image-list" class="results-list" aria-live="polite"></div>
+          </div>
+        </section>
+      </main>
+
+      <div id="admin-status" class="toast" role="status" aria-live="polite"></div>
+
+      <footer class="site-footer" role="contentinfo">
+        <div class="footer-content">
+          <span class="footer-copy">© 2025 EasyImg</span>
+          <span class="footer-powered">
+            Powered by
+            <a href="https://github.com/maiizii/easyimg" target="_blank" rel="noopener noreferrer">MaiiZii</a>
+          </span>
+        </div>
+      </footer>
+    </div>
+
+    <script type="module" src="/assets/admin.js"></script>
+  </body>
+</html>
