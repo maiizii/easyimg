@@ -524,8 +524,17 @@ function renderHistory(items) {
     const details = document.createElement('div');
     details.className = 'history-details';
     const timestamp = formatTimestamp(item.uploadTime || item.createdAt || item.time);
+    const timeText = document.createElement('span');
+    timeText.textContent = `上传时间：${timestamp}`;
+    details.append(timeText);
+
     const sizeLabel = formatSize(item.size);
-    details.textContent = `${timestamp} · ${sizeLabel}`;
+    if (sizeLabel) {
+      const sizeBadge = document.createElement('span');
+      sizeBadge.className = 'badge';
+      sizeBadge.textContent = sizeLabel;
+      details.append(sizeBadge);
+    }
 
     info.append(titleRow, details);
 
@@ -797,16 +806,20 @@ function renderResults(files) {
     name.className = 'history-name';
     name.textContent = item.name;
 
-    const sizeBadge = document.createElement('span');
-    sizeBadge.className = 'badge';
-    sizeBadge.textContent = formatSize(item.size);
-
-    titleRow.append(name, sizeBadge);
+    titleRow.append(name);
 
     const details = document.createElement('div');
     details.className = 'history-details';
-    const timestamp = formatTimestamp(item.uploadTime || item.createdAt || item.time);
-    details.textContent = timestamp ? `上传时间：${timestamp}` : '上传时间：刚刚';
+    const rawTimestamp = item.uploadTime || item.createdAt || item.time;
+    const timestamp = formatTimestamp(rawTimestamp);
+    const timeText = document.createElement('span');
+    timeText.textContent = rawTimestamp ? `上传时间：${timestamp}` : '上传时间：刚刚';
+    details.append(timeText);
+
+    const sizeBadge = document.createElement('span');
+    sizeBadge.className = 'badge';
+    sizeBadge.textContent = formatSize(item.size);
+    details.append(sizeBadge);
 
     info.append(titleRow, details);
 
