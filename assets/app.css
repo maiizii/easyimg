@@ -52,7 +52,7 @@ body {
 
 .site-footer {
   margin-top: auto;
-  padding: 1.5rem 1rem 2rem;
+  padding: 0.6rem 1rem 0.8rem;
   text-align: center;
   color: rgba(148, 163, 184, 0.85);
   font-size: 0.9rem;
@@ -180,7 +180,8 @@ body {
   flex: 1;
   width: min(1280px, 100%);
   margin: 0 auto;
-  padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 4vw, 3rem) 4rem;
+  padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 4vw, 3rem)
+    clamp(1.2rem, 4vw, 1.6rem);
 }
 
 .view {
