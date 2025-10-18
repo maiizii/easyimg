@@ -147,7 +147,7 @@ curl -H "X-API-Key: your-api-key" http://your-domain.com/api/images
 例如：
 
 ```bash
-FRONTEND_DIST_DIR=/var/www/image-hosting-frontend
+FRONTEND_DIST_DIR=/var/www/easyimg/www
 ```
 
 在重新启动服务后，直接访问 `https://img.example.com` 即会看到前端页面，API 地址同样为该域名根路径。
