@@ -50,6 +50,31 @@ body {
   flex-direction: column;
 }
 
+.site-footer {
+  margin-top: auto;
+  padding: 1.5rem 1rem 2rem;
+  text-align: center;
+  color: rgba(148, 163, 184, 0.85);
+  font-size: 0.9rem;
+}
+
+.footer-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.footer-powered a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.footer-powered a:hover,
+.footer-powered a:focus-visible {
+  text-decoration: underline;
+}
+
 .topbar {
   position: sticky;
   top: 0;
@@ -70,6 +95,17 @@ body {
   align-items: center;
   gap: 0.65rem;
   min-width: 0;
+}
+
+.brand-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.brand-link:focus-visible {
+  outline: 3px solid rgba(148, 163, 184, 0.45);
+  outline-offset: 4px;
+  border-radius: 18px;
 }
 
 .brand-mark {
@@ -225,7 +261,7 @@ body {
   justify-content: center;
   align-items: center;
   gap: 1.25rem;
-  min-height: clamp(320px, 50vh, 420px);
+  min-height: clamp(360px, 55vh, 480px);
 }
 
 .upload-area:hover {
@@ -447,7 +483,7 @@ input[type="password"]:focus {
 .history-info {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.1rem;
 }
 
 .history-name,
