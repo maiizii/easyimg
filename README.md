@@ -1,7 +1,18 @@
 简易图床 EasyImg
 =================
 
-EasyImg 是一个轻量级的自建图床方案，提供批量上传、历史管理和密钥保护等功能。随着后端支持自动托管 `www/` 目录中的前端页面，部署时只要在服务器上克隆本仓库并运行服务端 `server/` 即可对外提供服务。
+- EasyImg 是一个轻量级的自建图床方案，提供批量上传、历史管理和密钥保护等功能。随着后端支持自动托管 `www/` 目录中的前端页面，部署时只要在服务器上克隆本仓库并运行服务端 `server/` 即可对外提供服务。
+- 免登录、多用户单独管理、适合自用或小范围使用（自己备份数据）
+
+## 网站截图
+![img_mgvxrpv7_2b91w8.png](https://img.yet.la/images/945065e551fb71d356963dd71b9f46b009f6573de69be84918592867fde92e65/1760771299861-dyndgjrj-img_mgvxrpv7_2b91w8.png)
+![img_mgvxsf4q_sast42.png](https://img.yet.la/images/945065e551fb71d356963dd71b9f46b009f6573de69be84918592867fde92e65/1760771332792-atb7u5hr-img_mgvxsf4q_sast42.png)
+![img_mgvxt18h_xpaz3b.png](https://img.yet.la/images/945065e551fb71d356963dd71b9f46b009f6573de69be84918592867fde92e65/1760771361233-7o11mxqi-img_mgvxt18h_xpaz3b.png)
+
+## 测试地址
+
+- [img.yet.la](https://img.yet.la/)
+- 访问密码：nodeseek
 
 ## 目录结构
 
