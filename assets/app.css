@@ -81,8 +81,8 @@ body {
 }
 
 .brand-logo {
-  width: 100%;
-  height: 100%;
+  width: 65px;
+  height: auto;
   object-fit: contain;
 }
 
