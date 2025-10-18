@@ -74,7 +74,7 @@
               </label>
               <label class="form-item">
                 <span class="form-label">API 密钥（X-API-Key）</span>
-                <input id="apiKey" type="text" placeholder="在后端 .env 中配置的密钥" autocomplete="off" required />
+                <input id="apiKey" type="text" placeholder="请先在 API 页面生成专属密钥" autocomplete="off" required />
                 <span class="form-hint">安全提示：请妥善保管密钥，不要分享给他人</span>
               </label>
               <div class="form-actions">
@@ -91,6 +91,33 @@
               <p class="muted">快速查看当前配置并复制示例命令，便于在脚本或其他应用中集成</p>
             </div>
             <div class="api-cards">
+              <div class="info-card">
+                <h3>生成 API 密钥</h3>
+                <p class="muted">输入访问密码即可生成只属于当前客户端的 API 密钥，刷新页面也不会变化。</p>
+                <div class="info-item">
+                  <span class="info-label">客户端标识</span>
+                  <code id="client-id" class="info-value">计算中...</code>
+                  <button type="button" class="ghost" id="copy-client-id">复制</button>
+                </div>
+                <form id="api-key-form" class="form-grid compact">
+                  <label class="form-item">
+                    <span class="form-label">访问密码</span>
+                    <input id="apiPassword" type="password" placeholder="请输入访问密码" autocomplete="current-password" required />
+                  </label>
+                  <div class="form-actions">
+                    <button type="submit" id="generate-api-key">生成密钥</button>
+                  </div>
+                </form>
+                <div class="info-item hidden" id="generated-key-row">
+                  <span class="info-label">生成的密钥</span>
+                  <code id="generated-key" class="info-value"></code>
+                  <div class="result-actions">
+                    <button type="button" class="ghost" id="copy-generated-key">复制密钥</button>
+                    <button type="button" class="ghost" id="use-generated-key">保存到设置</button>
+                  </div>
+                </div>
+                <p class="muted" id="api-generator-status"></p>
+              </div>
               <div class="info-card">
                 <h3>当前配置</h3>
                 <div class="info-item">
