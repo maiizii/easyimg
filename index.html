@@ -42,8 +42,8 @@
             <div id="selected-files" class="pending-list hidden" aria-live="polite"></div>
             <div class="panel-actions">
               <button id="upload-button" type="button">开始上传</button>
-              <button type="button" class="ghost" id="refresh-history">刷新图片列表</button>
-              <button type="button" class="ghost" id="clear-history">清空本地记录</button>
+              <button type="button" class="ghost" id="clear-pending">清空待传图片</button>
+              <button type="button" class="ghost" id="reset-upload">重新开始上传</button>
             </div>
           </div>
           <div id="upload-results" class="results-list hidden" aria-live="polite"></div>
@@ -51,10 +51,16 @@
 
         <section id="view-history" class="view" aria-labelledby="history-title">
           <div class="panel">
-            <div class="panel-header">
-              <h2 id="history-title">管理图片</h2>
-              <p class="muted">预览、复制链接或删除已上传的图片</p>
-              <p id="history-warning" class="warning hidden">⚠️ 需要先配置 API 地址和密钥才能从服务器获取图片列表</p>
+            <div class="panel-header with-actions">
+              <div class="panel-header-main">
+                <h2 id="history-title">管理图片</h2>
+                <p class="muted">预览、复制链接或删除已上传的图片</p>
+                <p id="history-warning" class="warning hidden">⚠️ 需要先配置 API 地址和密钥才能从服务器获取图片列表</p>
+              </div>
+              <div class="panel-header-actions">
+                <button type="button" class="ghost" id="refresh-history">刷新图片列表</button>
+                <button type="button" class="ghost" id="clear-history">清空本地记录</button>
+              </div>
             </div>
             <div id="history-list" class="results-list" aria-live="polite"></div>
           </div>
@@ -79,6 +85,13 @@
                   <button type="button" class="ghost" id="generate-api-key-button">生成</button>
                 </div>
                 <span class="form-hint">安全提示：请妥善保管密钥，不要分享给他人</span>
+              </label>
+              <label class="form-item toggle-item">
+                <span class="form-label">是否开启图片自动上传</span>
+                <div class="toggle-control">
+                  <input id="auto-upload" type="checkbox" />
+                  <span class="form-hint">开启后添加图片将立即上传，无需在待上传列表中手动点击上传</span>
+                </div>
               </label>
               <div class="form-actions">
                 <button type="submit">保存配置</button>
