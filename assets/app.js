@@ -506,21 +506,12 @@ function renderHistory(items) {
     const info = document.createElement('div');
     info.className = 'history-info';
 
-    const titleRow = document.createElement('div');
-    titleRow.className = 'history-title-row';
+    const meta = document.createElement('div');
+    meta.className = 'history-meta';
 
     const name = document.createElement('div');
     name.className = 'history-name';
     name.textContent = item.name;
-
-    const storedName = (item.url || '').split('/').pop();
-    const deleteBtn = document.createElement('button');
-    deleteBtn.type = 'button';
-    deleteBtn.classList.add('danger');
-    deleteBtn.textContent = '删除图片';
-    deleteBtn.addEventListener('click', () => deleteImage(storedName || item.name));
-
-    titleRow.append(name, deleteBtn);
 
     const details = document.createElement('div');
     details.className = 'history-details';
@@ -537,7 +528,17 @@ function renderHistory(items) {
       details.append(sizeBadge);
     }
 
-    info.append(titleRow, details);
+    meta.append(name, details);
+    info.append(meta);
+
+    const storedName = (item.url || '').split('/').pop();
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.classList.add('danger');
+    deleteBtn.textContent = '删除图片';
+    deleteBtn.addEventListener('click', () => deleteImage(storedName || item.name));
+
+    info.append(deleteBtn);
 
     const tabs = createLinkTabs(item.name, direct);
     tabs.classList.add('history-tabs');
@@ -800,14 +801,12 @@ function renderResults(files) {
     const info = document.createElement('div');
     info.className = 'history-info';
 
-    const titleRow = document.createElement('div');
-    titleRow.className = 'history-title-row';
+    const meta = document.createElement('div');
+    meta.className = 'history-meta';
 
     const name = document.createElement('div');
     name.className = 'history-name';
     name.textContent = item.name;
-
-    titleRow.append(name);
 
     const details = document.createElement('div');
     details.className = 'history-details';
@@ -822,7 +821,8 @@ function renderResults(files) {
     sizeBadge.textContent = formatSize(item.size);
     details.append(sizeBadge);
 
-    info.append(titleRow, details);
+    meta.append(name, details);
+    info.append(meta);
 
     const tabs = createLinkTabs(item.name, direct);
 

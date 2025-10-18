@@ -82,12 +82,18 @@ body {
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-  padding: 0.65rem clamp(1rem, 2vw + 0.25rem, 1.75rem);
+  padding: 0.65rem 0;
+  color: #f8fafc;
+}
+
+.topbar-inner {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 4vw, 3rem);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  color: #f8fafc;
 }
 
 .brand {
@@ -470,10 +476,6 @@ input[type="password"]:focus {
   align-self: center;
 }
 
-.upload-card .history-title-row {
-  align-items: center;
-}
-
 .history-content {
   display: flex;
   flex-direction: column;
@@ -482,20 +484,22 @@ input[type="password"]:focus {
 
 .history-info {
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.history-meta {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.25rem;
 }
 
 .history-name,
 .history-details {
   line-height: 1.4;
-}
-
-.history-title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
 }
 
 .history-name {
@@ -504,7 +508,9 @@ input[type="password"]:focus {
   word-break: break-all;
 }
 
-.history-title-row button {
+.history-info button {
+  margin-left: auto;
+  flex-shrink: 0;
   white-space: nowrap;
 }
 
@@ -779,7 +785,7 @@ button.icon-button:hover {
     width: auto;
   }
 
-  .history-title-row button {
+  .history-info button {
     width: auto;
   }
 
