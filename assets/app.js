@@ -8,7 +8,6 @@ const state = {
   apiUrl: '',
   apiKey: '',
   clientId: '',
-  generatedKey: '',
   uploading: false,
   history: []
 };
@@ -36,15 +35,9 @@ const currentApi = el('#current-api');
 const currentKey = el('#current-key');
 const exampleUpload = el('#example-upload');
 const exampleHistory = el('#example-history');
-const apiPasswordInput = el('#apiPassword');
-const apiKeyForm = el('#api-key-form');
-const generatedKeyRow = el('#generated-key-row');
-const generatedKeyCode = el('#generated-key');
-const copyGeneratedKeyButton = el('#copy-generated-key');
-const useGeneratedKeyButton = el('#use-generated-key');
-const generatorStatus = el('#api-generator-status');
 const clientIdDisplay = el('#client-id');
 const copyClientIdButton = el('#copy-client-id');
+const generateApiKeyButton = el('#generate-api-key-button');
 
 let statusTimer = null;
 let pendingFiles = [];
@@ -134,7 +127,6 @@ function loadPersistedState() {
 
   state.apiUrl = normalizedStoredUrl || defaultUrl;
   state.apiKey = localStorage.getItem(storageKeys.apiKey) || '';
-  state.generatedKey = '';
 
   try {
     const savedHistory = JSON.parse(localStorage.getItem(storageKeys.history) || '[]');
@@ -149,8 +141,6 @@ function loadPersistedState() {
   renderHistory(state.history);
   updateAvailability();
   updateApiPreview();
-  updateGeneratedKeyUI();
-  setGeneratorStatus('');
 }
 
 function persistSettings() {
@@ -223,25 +213,6 @@ function updateApiPreview() {
     exampleHistory.textContent = `curl "${apiBase}/images" \\
   -H "X-API-Key: ${state.apiKey || 'YOUR_API_KEY'}"`;
   }
-}
-
-function updateGeneratedKeyUI() {
-  if (!generatedKeyRow || !generatedKeyCode) {
-    return;
-  }
-
-  if (state.generatedKey) {
-    generatedKeyCode.textContent = state.generatedKey;
-    generatedKeyRow.classList.remove('hidden');
-  } else {
-    generatedKeyCode.textContent = '';
-    generatedKeyRow.classList.add('hidden');
-  }
-}
-
-function setGeneratorStatus(message) {
-  if (!generatorStatus) return;
-  generatorStatus.textContent = message || '';
 }
 
 async function copyToClipboard(text) {
@@ -644,41 +615,12 @@ function setupEventListeners() {
     });
   }
 
-  if (copyGeneratedKeyButton) {
-    copyGeneratedKeyButton.addEventListener('click', () => {
-      if (!state.generatedKey) {
-        showStatus('请先生成 API 密钥', 'error');
-        return;
-      }
-      copyToClipboard(state.generatedKey);
-    });
-  }
-
-  if (useGeneratedKeyButton) {
-    useGeneratedKeyButton.addEventListener('click', () => {
-      if (!state.generatedKey) {
-        showStatus('请先生成 API 密钥', 'error');
-        return;
-      }
-
-      state.apiKey = state.generatedKey;
-      persistSettings();
-      applySettingsToForm();
-      updateAvailability();
-      updateApiPreview();
-      showStatus('已保存生成的 API 密钥', 'success');
-      setGeneratorStatus('密钥已保存到设置中，可立即使用。');
-    });
-  }
-
-  if (apiKeyForm) {
-    apiKeyForm.addEventListener('submit', handleGenerateApiKey);
+  if (generateApiKeyButton) {
+    generateApiKeyButton.addEventListener('click', handleGenerateApiKeyFromSettings);
   }
 }
 
-async function handleGenerateApiKey(event) {
-  event.preventDefault();
-
+async function handleGenerateApiKeyFromSettings() {
   if (!state.apiUrl) {
     showStatus('请先在设置中填写 API 地址', 'error');
     return;
@@ -689,15 +631,16 @@ async function handleGenerateApiKey(event) {
     return;
   }
 
-  const password = (apiPasswordInput?.value || '').trim();
-  if (!password) {
-    showStatus('请输入访问密码', 'error');
+  const password = window.prompt('请输入访问密码');
+  if (password === null) {
     return;
   }
 
-  setGeneratorStatus('正在生成专属 API 密钥...');
-  state.generatedKey = '';
-  updateGeneratedKeyUI();
+  const trimmedPassword = password.trim();
+  if (!trimmedPassword) {
+    showStatus('访问密码不能为空', 'error');
+    return;
+  }
 
   try {
     const response = await fetch(`${state.apiUrl}/api/auth/api-key`, {
@@ -706,7 +649,7 @@ async function handleGenerateApiKey(event) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        password,
+        password: trimmedPassword,
         clientId: state.clientId
       })
     });
@@ -717,13 +660,14 @@ async function handleGenerateApiKey(event) {
       throw new Error(payload.error || '生成 API 密钥失败');
     }
 
-    state.generatedKey = payload.apiKey;
-    updateGeneratedKeyUI();
-    setGeneratorStatus('生成成功，请复制或直接保存到设置中。');
-    showStatus('已生成专属 API 密钥', 'success');
+    state.apiKey = payload.apiKey;
+    persistSettings();
+    applySettingsToForm();
+    updateAvailability();
+    updateApiPreview();
+    showStatus('已生成并填入 API 密钥', 'success');
   } catch (error) {
     console.error(error);
-    setGeneratorStatus(error.message || '生成失败，请稍后再试');
     showStatus(error.message || '生成失败，请稍后再试', 'error');
   }
 }
