@@ -128,13 +128,13 @@ body {
 
 .footer-content {
   display: inline-flex;
-  align-items: flex-end;
+  align-items: baseline;
   gap: 0.65rem;
 }
 
 .footer-powered a {
   display: inline-flex;
-  align-items: flex-end;
+  align-items: baseline;
   gap: 0.4rem;
   color: inherit;
   font-weight: 400;
